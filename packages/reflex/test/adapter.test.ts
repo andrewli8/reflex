@@ -46,7 +46,7 @@ describe('claude-code adapter', () => {
     const out = await handleHook(base({ hook_event_name: 'PostToolUse', tool_use_id: 'r2', tool_name: 'Bash', tool_input: { command: 'cat r2.log' }, tool_response: { stdout: big, stderr: '' } }));
     const upd = out?.hookSpecificOutput?.['updatedResponse'] as { stdout: string; stderr: string };
     expect(upd.stderr).toBe('');
-    expect(upd.stdout).toContain('[reflex] trimmed');
+    expect(upd.stdout).toContain('[reflex] Output identical to step');
   });
 
   it('never throws on garbage input', async () => {

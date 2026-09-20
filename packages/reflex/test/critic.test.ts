@@ -159,11 +159,11 @@ describe('trim', () => {
     const c2 = call('Bash', { command: 'npm run test:again' });
     await r.pre(c2);
     await r.post(c, { output: big });
-    const d = await r.post(c2, { output: big }); // identical result -> trim
+    const d = await r.post(c2, { output: big + '\nextra tail line' }); // large, not identical -> head/tail trim keeping error lines
     expect(d.kind).toBe('trim');
     expect(d.replacement).toContain('FAIL src/auth.test.ts');
     expect(d.replacement).toContain('AssertionError');
-    expect(d.replacement).toContain('archived at');
+    expect(d.replacement).toContain('Full output: Read');
     expect(readdirSync(dir)).toHaveLength(1);
   });
 });
@@ -254,5 +254,45 @@ describe('constraint extraction', () => {
     expect(extractConstraints(text)).toEqual(['Do not change authentication providers.', 'Only touch application code;', 'never push to main.']);
     const noise = 'KEEP / DROP\nKEEP\nAnd I have never worked on the enterprise side.\nIt\'ll never scale to a Costco.\nTypes generated to `src/db.ts` (do not hand-edit).\nThe rule engine — may route work but never mark a rep.\nDon\'t be the chief blocking officer.\nnow also never delete migrations';
     expect(extractConstraints(noise)).toEqual(["Don't be the chief blocking officer.", 'now also never delete migrations']);
+  });
+});
+
+describe('identical collapse, learning, failures', () => {
+  it('collapses an identical result to one line naming the earlier step', async () => {
+    const { r } = mk({ mode: 'nudge' });
+    const out = 'status line\n'.repeat(300);
+    const c1 = call('Bash', { command: 'git status' }); await r.pre(c1); await r.post(c1, { output: out });
+    const c2 = call('Bash', { command: 'git status --short' }); await r.pre(c2);
+    const d = await r.post(c2, { output: out });
+    expect(d.kind).toBe('trim');
+    expect(d.replacement).toMatch(/identical to step 1/);
+    expect(d.replacement!.length).toBeLessThan(200);
+  });
+  it('stops nudging a signature after the user forces it', async () => {
+    const { r, events } = mk({ mode: 'enforce' });
+    const c1 = call('Read', { file_path: 'a.ts' }); await r.pre(c1); await r.post(c1, { output: 'x' });
+    expect((await r.pre(call('Read', { file_path: 'a.ts' }))).host.action).toBe('deny');
+    await r.pre(call('Read', { file_path: 'a.ts' }, 'reflex:force'));
+    const again = await r.pre(call('Read', { file_path: 'a.ts' }));
+    expect(again.host.action).toBe('allow');
+    expect(events.at(-1)?.suppressed).toBe('learned');
+  });
+  it('learns from history: a nudged call whose result was used is not nudged again', async () => {
+    const { r, events } = mk({ mode: 'nudge' });
+    const c1 = call('Read', { file_path: 'cfg.json' }); await r.pre(c1); await r.post(c1, { output: '{"port_number": 8080}' });
+    const c2 = call('Read', { file_path: 'cfg.json' }); await r.pre(c2); await r.post(c2, { output: '{"port_number": 9090, "new_key_x": 1}' });
+    const c3 = call('Grep', { pattern: 'new_key_x' }); await r.pre(c3); await r.post(c3, { output: 'found' });
+    const r2 = new Reflex({ cwd, config: { ...defaultConfig, mode: 'nudge' }, history: events });
+    const d = await r2.pre(call('Read', { file_path: 'cfg.json' }));
+    expect(d.event.suppressed).toBe('learned');
+  });
+  it('lists failures in the ledger with retry outcome', async () => {
+    const { r } = mk({ mode: 'nudge' });
+    const c1 = call('Bash', { command: 'npm test' }); await r.pre(c1); await r.post(c1, { output: 'FAIL 1 test', error: true });
+    const c2 = call('Bash', { command: 'npm test' }); await r.pre(c2); await r.post(c2, { output: 'ok 12 tests' });
+    const c3 = call('Bash', { command: 'npm run lint' }); await r.pre(c3); await r.post(c3, { output: 'Error: x', error: true });
+    const led = r.ledger();
+    expect(led).toMatch(/npm test failed at step 1, passed at step 2/);
+    expect(led).toMatch(/npm run lint failed at step 3, never retried/);
   });
 });

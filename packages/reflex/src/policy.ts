@@ -36,7 +36,7 @@ export function postPolicy(f: PostFlags, s: PostSignals | null, bytes: number, c
   if (!enabled || f.error || bytes < minBytes) return { kind: 'keep' };
   // Small command output is trimmed only when it is repetitive (progress lines, package lists); dense output like help text stays.
   if (toolClass === 'exec' && bytes < cfg.trim.minBytes) return f.repetitive ? { kind: 'trim', reason: 'repetitive command output' } : { kind: 'keep' };
-  if (f.identicalResult) return { kind: 'trim', reason: 'identical to an earlier result' };
+  if (f.identicalResult) return { kind: 'trim', reason: 'identical' }; // collapsed to one line naming the earlier step
   if (f.protected || s == null) return bytes > maxBytes ? { kind: 'trim', reason: 'large output' } : { kind: 'keep' };
   if (cfg.drop.enabled && (s.relevant ?? 1) <= 0.15 && (s.novel ?? 1) <= 0.15) return { kind: 'drop', reason: 'irrelevant and not new' };
   if ((s.relevant ?? 1) <= cfg.thresholds.relevantTrim || bytes > maxBytes) return { kind: 'trim', reason: 'low relevance or large output' };

@@ -23,7 +23,7 @@ export interface ReflexEvent {
   /** User-facing message for hosts that support one (Claude Code `systemMessage`). */
   userMessage?: string;
   reason?: string; flags?: Flags; signals?: Record<string, number> | null; forced?: boolean;
-  suppressed?: 'neverIntervene' | 'rate'; patternAsk?: string; source: 'deterministic' | 'model' | 'fallback';
+  suppressed?: 'neverIntervene' | 'rate' | 'learned'; patternAsk?: string; source: 'deterministic' | 'model' | 'fallback';
   providerMs?: number; cached?: boolean; bytesIn?: number; bytesOut?: number; questionSet?: string;
 }
 
@@ -77,6 +77,8 @@ export class Reflex {
   /** step -> novel identifiers of that step's result, for reference detection on later calls. */
   private novelByStep = new Map<number, Set<string>>();
   private referenced = new Set<number>();
+  /** Signatures the user or agent has overruled this session: forced calls, and nudged calls whose result was later used. */
+  private quiet = new Set<string>();
 
   constructor(o: ReflexOptions) {
     this.cwd = o.cwd;
@@ -88,10 +90,14 @@ export class Reflex {
     const folded = foldEvents(o.history ?? []);
     this.actions = folded.actions;
     this.events = folded.events;
+    const nudgedSig = new Map<number, string>();
     for (const e of folded.events) {
       if (e.phase === 'post' && e.novel) this.novelByStep.set(e.step, new Set(e.novel));
       if (e.phase === 'pre' && e.refs) for (const r of e.refs) this.referenced.add(r);
+      if (e.phase === 'pre' && e.forced && e.action) this.quiet.add(e.action.signature);
+      if (e.phase === 'pre' && e.applied === 'nudge' && e.action) nudgedSig.set(e.step, e.action.signature);
     }
+    for (const [step, sig] of nudgedSig) if (this.referenced.has(step)) this.quiet.add(sig); // the nudge was wrong: the result mattered
     for (const set of this.novelByStep.values()) for (const t of set) this.seen.add(t);
     if (!o.goal && folded.goal) this.setGoal(folded.goal);
     this.log = o.log ?? (() => {});
@@ -121,6 +127,7 @@ export class Reflex {
       const action: Action = { ...proposed, ...(host.applied === 'skip' || host.applied === 'replan' ? { outcome: 'skipped' as const } : host.applied === 'ask' ? { outcome: 'asked' as const } : {}) };
       const event: ReflexEvent = { ...base, policy: policy.kind, applied: host.applied, source: 'deterministic', action, ...(refs.length ? { refs } : {}), ...(policy.reason ? { reason: policy.reason } : {}), ...(forced ? { forced } : {}), ...extra };
       this.record(event, action);
+      if (forced) this.quiet.add(proposed.signature);
       return { policy, host, event };
     };
 
@@ -128,8 +135,9 @@ export class Reflex {
     if (cls.destructivePattern) return finish({ kind: 'ask', reason: `matches destructive pattern: ${cls.destructivePattern}` }, { patternAsk: cls.destructivePattern });
     // 2. Explicit override.
     if (forced) return finish({ kind: 'execute', reason: 'override' }, {});
-    // 3. neverIntervene.
+    // 3. neverIntervene, then what this session has already overruled.
     if (this.neverIntervene(call, proposed)) return finish({ kind: 'execute' }, { suppressed: 'neverIntervene' });
+    if (this.quiet.has(proposed.signature)) return finish({ kind: 'execute' }, { suppressed: 'learned' });
     // 4. Deterministic waste checks.
     const flags = detectFlags(this.actions, proposed);
     let policy = prePolicy(flags, cls.readOnly, null, this.config);
@@ -160,10 +168,11 @@ export class Reflex {
     const output = result.output ?? '';
     const bytes = Buffer.byteLength(output);
     const resultHash = sha(output);
+    const sameAs = this.actions.find((a, i) => i !== idx && a.resultHash === resultHash && a.resultDigest !== '');
     const flags = {
       error: Boolean(result.error) || /^(error|fatal|exception)\b/im.test(output.slice(0, 200)),
       protected: isProtected(call, output),
-      identicalResult: this.actions.some((a, i) => i !== idx && a.resultHash === resultHash),
+      identicalResult: Boolean(sameAs),
       repetitive: isRepetitive(output),
     };
     let decision = postPolicy(flags, null, bytes, this.config, action.class);
@@ -175,7 +184,9 @@ export class Reflex {
       extra = { ...r.meta, signals: r.signals };
     }
     const archived = decision.kind === 'keep' || !this.archiveDir ? undefined : archive(this.archiveDir, call.toolUseId, output);
-    const replacement = decision.kind === 'trim' ? trim(output, this.config, decision.reason, archived, action.class) : decision.kind === 'drop' ? `[reflex] Result omitted (${bytes} bytes): ${decision.reason}.${archived ? ` Full output archived at ${archived}.` : ''} Re-run with 'reflex:force' if needed.` : undefined;
+    const replacement = decision.reason === 'identical' && sameAs
+      ? `[reflex] Output identical to step ${sameAs.step} (${sameAs.summary.slice(0, 60)}), ${bytes} bytes, not repeated.${archived ? ` Full copy: Read ${archived}` : ''}`
+      : decision.kind === 'trim' ? trim(output, this.config, decision.reason, archived, action.class) : decision.kind === 'drop' ? `[reflex] Result omitted (${bytes} bytes): ${decision.reason}.${archived ? ` Full output archived at ${archived}.` : ''} Re-run with 'reflex:force' if needed.` : undefined;
     const novel: string[] = [];
     for (const t of identifiers(output)) { if (!this.seen.has(t) && novel.length < 60) novel.push(t); this.seen.add(t); }
     const step0 = idx >= 0 ? action.step : this.actions.length + 1;
@@ -311,6 +322,14 @@ export class Reflex {
     if (edits.length) lines.push(`EDITED (${edits.length}): ${[...new Set(edits.map((a) => rel(a.summary.replace(/^\w+ /, ''))))].join(', ').slice(0, 600)}`);
     const cmds = this.actions.filter((a) => (a.class === 'exec' || a.class === 'vcs' || a.class === 'db') && a.outcome).slice(-15);
     if (cmds.length) lines.push(`COMMANDS: ${cmds.map((a) => `${a.summary.replace(/^Bash /, '').slice(0, 60)} → ${a.outcome}${a.resultDigest ? ` "${a.resultDigest.slice(0, 40)}"` : ''}`).join(' | ').slice(0, 1500)}`);
+    const failed = this.actions.filter((a) => a.outcome === 'error' && !a.readOnly);
+    if (failed.length) {
+      const items = failed.slice(-10).map((f) => {
+        const later = this.actions.find((a) => a.step > f.step && a.signature === f.signature && a.outcome === 'ok');
+        return `${f.summary.replace(/^Bash /, '').slice(0, 50)} failed at step ${f.step}${later ? `, passed at step ${later.step}` : ', never retried'}`;
+      });
+      lines.push(`FAILURES: ${items.join(' | ').slice(0, 900)}`);
+    }
     const asked = this.events.filter((e) => e.phase === 'pre' && e.applied === 'ask');
     if (asked.length) lines.push(`ASKED: ${asked.map((e) => `${e.summary.slice(0, 50)} (${e.reason ?? ''})`).join('; ').slice(0, 400)}`);
     return lines.join('\n');
@@ -388,7 +407,7 @@ export function trim(output: string, cfg: ReflexConfig, reason?: string, archive
   const middle = output.slice(head, output.length - tail);
   const kept = middle.split('\n').filter((l) => ERROR_LINE.test(l)).slice(0, MAX_KEPT_LINES);
   const lines = output.split('\n').length;
-  const where = archivePath ? ` Full output archived at ${archivePath}.` : '';
+  const where = archivePath ? ` Full output: Read ${archivePath}` : '';
   const keptBlock = kept.length ? `\n[reflex] ${kept.length} error-looking lines kept from the trimmed middle:\n${kept.join('\n')}\n` : '\n';
   return `${output.slice(0, head)}\n[reflex] trimmed ${lines} lines (${output.length} chars)${reason ? `: ${reason}` : ''}.${where} Re-run with 'reflex:force' to see everything.${keptBlock}${output.slice(-tail)}`;
 }
