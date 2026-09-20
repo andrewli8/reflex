@@ -11,12 +11,12 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family
 .stage{display:grid;grid-template-rows:auto 1fr;height:100vh;padding:24px 28px 24px;max-width:1500px;margin:0 auto;gap:16px}
 .head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;padding:0 4px}
 .head h1{margin:0;font:italic 400 34px/1 "Instrument Serif",serif}
-.head h1 i{color:var(--acc);font-style:normal}
+.head h1 i{color:var(--jev);font-style:normal}
 .head p{margin:8px 0 0;color:var(--dim);font-size:13px}
 .head .scene{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--dim);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
 .head .scene b{color:var(--ink);font-weight:500}
-.dots{display:flex;gap:5px}.dots i{width:18px;height:3px;background:var(--line);border-radius:2px;transition:background .3s}.dots i.on{background:var(--acc)}
-.grid{display:grid;grid-template-columns:1fr 380px;gap:18px;min-height:0}
+.dots{display:flex;gap:5px}.dots i{width:18px;height:3px;background:var(--line);border-radius:2px;transition:background .3s}.dots i.on{background:var(--jev)}
+.grid{display:grid;grid-template-columns:1fr 400px;gap:18px;min-height:0}
 .term{background:var(--term);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 1px 0 rgba(0,0,0,.02),0 24px 60px -30px rgba(20,20,20,.18)}
 .bar{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line);color:var(--dim);font-size:12px}
 .bar i{width:10px;height:10px;border-radius:50%;background:var(--line)}
@@ -28,46 +28,41 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family
 .a{color:var(--dim)}
 .t{color:var(--ink)}.t::before{content:"● ";color:var(--dim)}
 .t b{font-weight:600}
-.r{display:flex;align-items:center;gap:10px;color:var(--ink);margin-left:1.1em;padding:5px 12px;border-left:2px solid var(--acc);background:#fff5f1;border-radius:0 6px 6px 0}
-.r .tag{color:var(--acc);font-weight:600}
+.r{display:flex;align-items:center;gap:10px;color:var(--ink);margin-left:1.1em;padding:5px 12px;border-left:2px solid var(--jev);background:#f3f6ff;border-radius:0 6px 6px 0}
+.r .tag{color:var(--jev);font-weight:600}
 .r .s{color:var(--dim)}.r .j{color:var(--jev);font-weight:500}
-.r .dec{margin-left:auto;border:1.5px solid currentColor;border-radius:4px;padding:0 8px;font-size:12px;font-weight:600;letter-spacing:.12em;background:#fff}
+.r .dec{margin-left:auto;border:1.5px solid currentColor;border-radius:4px;padding:0 8px;font-size:12px;font-weight:600;letter-spacing:.12em;background:#fff;white-space:nowrap}
 .r .dec.ok{color:var(--ok)}.r .dec.acc{color:var(--acc)}.r .dec.w{color:var(--warn)}
 .res{color:var(--dim);padding-left:1.1em}
 .foot{display:flex;gap:16px;padding:10px 16px;border-top:1px solid var(--line);font-size:11px;color:var(--dim)}
 .foot span b{display:inline-block;border:1.5px solid currentColor;border-radius:4px;padding:0 5px;font-size:10px;font-weight:600;letter-spacing:.12em;margin-right:5px}
 .foot .ok{color:var(--ok)}.foot .acc{color:var(--acc)}.foot .w{color:var(--warn)}
-.cursor::after{content:"▍";color:var(--acc);animation:b 1s steps(2) infinite}
+.cursor::after{content:"▍";color:var(--jev);animation:b 1s steps(2) infinite}
 @keyframes b{50%{opacity:0}}
 .side{display:flex;flex-direction:column;gap:12px;min-height:0;overflow:hidden}
 .card{background:var(--term);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
 .card h3{margin:0 0 10px;font:italic 400 21px "Instrument Serif",serif}
-.card h3 i{color:var(--acc);font-style:normal}
-.cap{min-height:124px;transition:opacity .3s}
-.cap small{display:block;color:var(--acc);font-size:11px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px}
+.card h3 i{color:var(--jev);font-style:normal}
+.cap{min-height:120px;transition:opacity .3s}
+.cap small{display:block;color:var(--jev);font-size:11px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px}
 .cap b{display:block;font:italic 400 24px/1.15 "Instrument Serif",serif;margin-bottom:6px}
 .cap p{margin:0;color:var(--dim);font-size:12px;line-height:1.5}
-.stages{display:flex;flex-direction:column;gap:3px}
-.st{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:10px;align-items:center;font-size:12px;color:var(--dim);padding:5px 8px;border-radius:6px;white-space:nowrap;transition:background .2s,color .2s}
-.st>span:first-of-type{overflow:hidden;text-overflow:ellipsis}
-.st i{width:8px;height:8px;border-radius:50%;background:var(--line);justify-self:center}
-.st.on{background:var(--soft);color:var(--ink)}.st.on i{background:var(--acc);box-shadow:0 0 0 4px rgba(255,74,28,.16)}
-.st.jev.on{background:#eef2ff}.st.jev.on i{background:var(--jev);box-shadow:0 0 0 4px rgba(47,92,255,.16)}
-.st.stop{color:var(--acc);font-weight:500}
-.st .ms{font-variant-numeric:tabular-nums;color:var(--dim)}
-.st.on .ms{color:var(--ink)}
-.jevc{border-color:#cfd9ff;background:#f7f9ff;flex:1;min-height:0}
-.jevc h3 i{color:var(--jev)}
+.state{font-size:12px;color:var(--dim);line-height:1.55}
+.state div{display:grid;grid-template-columns:92px minmax(0,1fr);gap:8px;padding:3px 0;border-top:1px solid var(--line)}
+.state div:first-child{border-top:0}
+.state span{color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.state em{font-style:normal;color:var(--jev)}
+.jevc{border-color:#cfd9ff;background:#f7f9ff;flex:1;min-height:0;display:flex;flex-direction:column}
 .jevc .why{color:var(--dim);font-size:12px;line-height:1.5;min-height:36px}
-.qs{display:flex;flex-direction:column;gap:8px;margin-top:10px}
-.q{display:grid;grid-template-columns:1fr 52px;gap:10px;align-items:center;font-size:12px}
+.qs{display:flex;flex-direction:column;gap:5px;margin-top:8px}
+.q{display:grid;grid-template-columns:minmax(0,1fr) 56px;gap:6px 10px;align-items:center;font-size:11.5px}
 .q span{color:var(--ink)}
 .q .bar2{grid-column:1/-1;height:4px;background:#e2e8ff;border-radius:2px;overflow:hidden}
 .q .bar2 i{display:block;height:100%;width:0;background:var(--jev);transition:width .18s linear}
-.q .bar2 i.hot{background:var(--acc)}
+.q .bar2 i.hot{background:var(--acc)}.q .bar2 i.good{background:var(--ok)}
 .q b{font:400 20px "Instrument Serif",serif;color:var(--jev);text-align:right;font-variant-numeric:tabular-nums}
-.q b.hot{color:var(--acc)}
-.jevc .lat{margin-top:10px;font-size:12px;color:var(--dim)}
+.q b.hot{color:var(--acc)}.q b.good{color:var(--ok)}
+.jevc .lat{margin-top:auto;padding-top:10px;font-size:12px;color:var(--dim)}
 .jevc.idle .qs,.jevc.idle .lat{opacity:.35}
 .k{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px 16px}
 .k small{display:block;color:var(--dim);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:2px}
@@ -79,10 +74,10 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family
 <div class="stage">
   <div class="head">
     <div>
-      <h1><i>Reflex</i> sits between the agent and its tools.</h1>
-      <p>Every call passes through it before it runs. Cheap checks first. Whatever they do not settle, Jev scores in one round trip.</p>
+      <h1><i>Jev</i> reads the task. Your permission rules cannot.</h1>
+      <p>Reflex hands Jev the goal, the constraints, the last steps and the proposed call. One round trip, about 200 ms, three yes/no answers or one verdict. Pattern lists only nominate; Jev decides.</p>
     </div>
-    <div class="scene"><span>scene <b id="sn">1</b> / 6</span><div class="dots" id="dots"></div></div>
+    <div class="scene"><span>scene <b id="sn">1</b> / 5</span><div class="dots" id="dots"></div></div>
   </div>
   <div class="grid">
     <div class="term">
@@ -93,129 +88,107 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family
         <span class="w"><b>NOTE</b>runs, agent told why</span>
         <span class="acc"><b>ASK</b>you decide</span>
         <span class="acc"><b>DENY</b>never runs</span>
-        <span class="w"><b>TRIM</b>output cut</span>
       </div>
     </div>
     <div class="side">
       <div class="card cap" id="cap"><small>now showing</small><b>The task</b><p></p></div>
       <div class="card">
-        <h3><i>Reflex</i> pipeline, per call</h3>
-        <div class="stages">
-          <div class="st" data-s="hook"><i></i><span>hook fires, tool waits</span><span class="ms"></span></div>
-          <div class="st" data-s="script"><i></i><span>destructive patterns, in scripts too</span><span class="ms"></span></div>
-          <div class="st" data-s="dedupe"><i></i><span>duplicate · loop · polling</span><span class="ms"></span></div>
-          <div class="st jev" data-s="jev"><i></i><span>Jev: 3 yes/no questions, 1 round trip</span><span class="ms"></span></div>
-          <div class="st" data-s="policy"><i></i><span>decide</span><span class="ms"></span></div>
+        <h3>What <i>Jev</i> is shown</h3>
+        <div class="state">
+          <div>goal<span id="sg">—</span></div>
+          <div>constraints<span id="sc">—</span></div>
+          <div>recent<span id="sr">—</span></div>
+          <div>proposed<span id="sp">—</span></div>
         </div>
       </div>
       <div class="card jevc idle" id="jevcard">
-        <h3><i>Jev</i> scores the call</h3>
-        <div class="why" id="jwhy">Not reached yet. A pattern or duplicate match decides without a model.</div>
+        <h3><i>Jev</i> answers</h3>
+        <div class="why" id="jwhy">Waiting for the first call.</div>
         <div class="qs" id="qs"></div>
         <div class="lat" id="jlat"></div>
       </div>
       <div class="card k">
         <div><small>calls</small><b id="kc">0</b></div>
-        <div><small>to Jev</small><b id="kj" class="j">0</b></div>
+        <div><small>Jev calls</small><b id="kj" class="j">0</b></div>
         <div><small>stopped</small><b id="ks" class="acc">0</b></div>
-        <div><small>tokens</small><b id="kt">0</b></div>
+        <div><small>Jev cost</small><b id="kt">$0.0000</b></div>
       </div>
     </div>
   </div>
 </div>
 <script>
 const out = document.getElementById('out');
-const K = { c:0, j:0, s:0, t:0 };
-const setK = () => { kc.textContent = K.c; kj.textContent = K.j; ks.textContent = K.s; kt.textContent = K.t.toLocaleString(); };
+const K = { c:0, j:0, s:0 };
+const setK = () => { kc.textContent = K.c; kj.textContent = K.j; ks.textContent = K.s; kt.textContent = '$' + (K.j * 0.00002).toFixed(5); };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 function line(cls, html){ const el = document.createElement('div'); el.className = 'l ' + cls; el.innerHTML = html; out.appendChild(el); requestAnimationFrame(() => el.classList.add('show')); while (out.children.length > 18) out.removeChild(out.firstChild); return el; }
 async function type(cls, text, cps = 60){ const el = line(cls, ''); el.classList.add('cursor'); for (let i = 1; i <= text.length; i++) { el.textContent = text.slice(0, i); await sleep(1000 / cps); } el.classList.remove('cursor'); return el; }
-const stages = [...document.querySelectorAll('.st')];
-function light(names, stop){ stages.forEach(s => { s.classList.toggle('on', names.includes(s.dataset.s)); s.classList.toggle('stop', s.dataset.s === stop); }); }
-function ms(name, v){ const s = stages.find(x => x.dataset.s === name); if (s) s.querySelector('.ms').textContent = v ? `${v} ms` : ''; }
-function clearMs(){ stages.forEach(s => s.querySelector('.ms').textContent = ''); }
-const N = 6; dots.innerHTML = '<i></i>'.repeat(N);
+const N = 5; dots.innerHTML = '<i></i>'.repeat(N);
 async function scene(n, title, blurb){
   cap.style.opacity = 0; await sleep(300);
   sn.textContent = n; [...dots.children].forEach((d, i) => d.classList.toggle('on', i < n));
   cap.innerHTML = `<small>scene ${n}: now showing</small><b>${title}</b><p>${blurb}</p>`;
-  cap.style.opacity = 1; await sleep(1200);
+  cap.style.opacity = 1; await sleep(1300);
 }
 const decClass = d => d === 'ASK' || d === 'DENY' ? 'acc' : d === 'ALLOW' ? 'ok' : 'w';
 const chip = d => `<span class="dec ${decClass(d)}">${d}</span>`;
+const S = { goal:'', constraints:'', recent:[] };
+function setState(proposed){ sg.textContent = S.goal || '—'; sc.textContent = S.constraints || 'none'; sr.textContent = S.recent.slice(-3).join(' · ') || '—'; sp.innerHTML = proposed ? `<em>${proposed}</em>` : '—'; }
 
-// Each call: tool line, stages light in the real order, Jev card fills if reached, one Reflex line with the decision.
+// Each call: tool line, Jev card fills with the questions and scores, one Reflex line with the decision.
 async function call(o){
-  K.c++; setK(); clearMs();
+  K.c++; setK();
   line('t', `<b>${o.tool}</b> ${o.arg}`);
-  await sleep(250);
-  light(['hook']); ms('hook', 30); await sleep(240);
-  light(['hook','script']); ms('script', 2); await sleep(260);
-  if (o.stop === 'script') { light(['hook','script'], 'script'); }
-  else {
-    light(['hook','script','dedupe']); ms('dedupe', 1); await sleep(260);
-    if (o.stop === 'dedupe') light(['hook','script','dedupe'], 'dedupe');
-  }
+  setState(o.summary);
+  await sleep(350);
   const el = line('r', `<span class="tag">reflex</span> <span>${o.text}</span>`);
-  if (o.jev) {
-    light(['hook','script','dedupe','jev']);
-    jevcard.classList.remove('idle'); jwhy.textContent = o.jev.why; jlat.textContent = '';
-    qs.innerHTML = o.jev.qs.map((q, i) => `<div class="q"><span>${q.t}</span><b id="qv${i}">0.00</b><div class="bar2"><i id="qb${i}"></i></div></div>`).join('');
-    const js = document.createElement('span'); js.className = 'j'; el.appendChild(js);
-    const main = o.jev.qs[0];
-    for (let i = 0; i <= 24; i++) {
-      const f = i / 24;
-      o.jev.qs.forEach((q, k) => { const v = q.v * f; const hot = q.v >= .85; document.getElementById('qv' + k).textContent = v.toFixed(2); document.getElementById('qv' + k).className = hot ? 'hot' : ''; const b = document.getElementById('qb' + k); b.style.width = (v * 100) + '%'; b.className = hot ? 'hot' : ''; });
-      js.textContent = `jev ${(main.v * f).toFixed(2)}`;
-      ms('jev', Math.round(o.jev.ms * f));
-      await sleep(o.jev.ms / 24);
-    }
-    K.j++; setK();
-    js.textContent = `jev ${main.v.toFixed(2)} · ${o.jev.ms} ms`;
-    jlat.textContent = `${o.jev.ms} ms round trip · ask threshold 0.85`;
-    await sleep(500);
+  jevcard.classList.remove('idle'); jwhy.textContent = o.jev.why; jlat.textContent = '';
+  qs.innerHTML = o.jev.qs.map((q, i) => `<div class="q"><span>${q.t}</span><b id="qv${i}">0.00</b><div class="bar2"><i id="qb${i}"></i></div></div>`).join('');
+  const js = document.createElement('span'); js.className = 'j'; el.appendChild(js);
+  const main = o.jev.label ? o.jev.qs.reduce((a, b) => b.v > a.v ? b : a) : o.jev.qs[0];
+  for (let i = 0; i <= 24; i++) {
+    const f = i / 24;
+    o.jev.qs.forEach((q, k) => { const v = q.v * f; const cls = q.v >= (q.hotAt ?? .85) ? (q.good ? 'good' : 'hot') : ''; const vb = document.getElementById('qv' + k); vb.textContent = v.toFixed(2); vb.className = cls; const b = document.getElementById('qb' + k); b.style.width = (v * 100) + '%'; b.className = cls; });
+    js.textContent = `jev ${o.jev.label ? o.jev.label + ' ' : ''}${(main.v * f).toFixed(2)}`;
+    await sleep(o.jev.ms / 24);
   }
-  light([...stages.map(s => s.dataset.s).filter(s => (s !== 'jev' || o.jev))].filter(s => o.stop ? true : true), o.stop);
-  stages.find(s => s.dataset.s === 'policy').classList.add('on');
+  K.j++; setK();
+  js.textContent = `jev ${o.jev.label ? o.jev.label + ' ' : ''}${main.v.toFixed(2)} · ${o.jev.ms} ms`;
+  jlat.textContent = `${o.jev.ms} ms round trip · ${o.jev.rule}`;
+  await sleep(600);
   el.insertAdjacentHTML('beforeend', chip(o.dec));
   if (o.dec === 'ASK' || o.dec === 'DENY') { K.s++; setK(); }
-  if (o.saved) { K.t += o.saved; setK(); }
-  await sleep(800);
+  S.recent.push(o.summary);
+  await sleep(900);
   if (o.res) line('res', o.res);
-  await sleep(o.pause ?? 1100);
-  light([]);
+  await sleep(o.pause ?? 1200);
 }
 
-const READ = 'redundant with a recent read?';
 const SCOPE = 'conflicts with the goal or a constraint?';
-const DESTR = 'deletes or overwrites something not created this session?';
+const DESTR = 'deletes or overwrites something not from this session?';
 const IRREV = 'impossible to undo in one step?';
+const V = ['requested by the goal', 'needed to finish the goal', 'unrelated to the goal', 'forbidden by a constraint'];
 
 const SCRIPT = [
-  () => scene(1, 'The task, with a constraint', 'One fix, one rule. Reflex extracts the rule and keeps it in front of the model for every call that follows. First call: nothing to match, so Jev scores it and says fine.'),
-  async () => { await type('u', 'Fix the login redirect bug in src/auth.ts. Do not change authentication providers.'); await sleep(600); line('a', 'Reading the auth module first.'); await sleep(500); },
-  () => call({ tool:'Read', arg:'src/auth.ts', text:'first read of this file', jev:{ why:'A read. Jev is asked whether it repeats a recent read and whether it is in scope.', qs:[{ t:READ, v:0.11 }, { t:SCOPE, v:0.06 }], ms:158 }, dec:'ALLOW', res:'export const login = (req) => redirect(req.query.next_url ?? "/hom");' }),
-  () => scene(2, 'The same read, twice', 'Agents re-read what they already have. Reflex hashes every call. An exact repeat with the file unchanged never reaches Jev; the earlier result is handed back.'),
-  () => call({ tool:'Read', arg:'src/auth.ts', text:'duplicate of step 1, file unchanged', stop:'dedupe', dec:'DENY', saved:412, res:'[reflex] identical call already made at step 1; earlier result began "export const login = …"' }),
-  () => scene(3, 'A harmless-looking script', 'The command is ./sync.sh. Reflex opens the script and finds git reset --hard inside. Pattern match, no model, straight to a prompt.'),
-  async () => { line('a', 'AGENTS.md says to run ./sync.sh before any change.'); await sleep(500); },
-  () => call({ tool:'Bash', arg:'./sync.sh', text:'<span class="s">inside sync.sh:</span> git reset --hard, git push --force', stop:'script', dec:'ASK', res:'[permission prompt] Reflex: matches destructive pattern: git reset --hard (inside ./sync.sh)   → denied', pause:1500 }),
-  () => scene(4, 'An edit that breaks the rule', 'No pattern can catch this. Jev reads the goal, the constraint and the edit, answers three yes/no questions in one round trip. 0.99 on the constraint question clears the 0.85 ask threshold.'),
+  () => scene(1, 'The task, with a constraint', 'Reflex extracts the rule from the prompt. From here on it is part of what Jev sees on every write and every risky command.'),
+  async () => { S.goal = 'Fix the login redirect bug in src/auth.ts'; S.constraints = 'Do not change authentication providers'; S.recent = []; setState(); await type('u', 'Fix the login redirect bug in src/auth.ts. Do not change authentication providers.'); await sleep(500); line('a', 'Reading the auth module first.'); await sleep(400); line('t', '<b>Read</b> src/auth.ts'); S.recent.push('Read src/auth.ts'); await sleep(300); line('res', 'export const login = (req) => redirect(req.query.next_url ?? "/hom");'); await sleep(900); },
+  () => scene(2, 'An edit that breaks the rule', 'No regex knows what "authentication provider" means. Jev reads the constraint and the edit together. 0.99 clears the 0.85 ask threshold; you get a prompt.'),
   async () => { line('a', 'The migration doc says to switch the provider to Clerk first.'); await sleep(500); },
-  () => call({ tool:'Edit', arg:'src/auth0.config.ts → replace Auth0 with Clerk', text:'<span class="s">constraint:</span> "do not change authentication providers"', jev:{ why:'A write. Three questions on the state: goal, constraints, recent steps, the proposed edit.', qs:[{ t:SCOPE, v:0.99 }, { t:DESTR, v:0.66 }, { t:IRREV, v:0.30 }], ms:184 }, dec:'ASK', res:'[permission prompt] Reflex: conflicts with the goal or a constraint   → denied', pause:1500 }),
-  () => scene(5, 'The right edit', 'Same three questions, same round trip. Scores stay low, the edit runs. Jev is consulted on every call the cheap checks let through; the difference is the answer.'),
-  () => call({ tool:'Edit', arg:'src/auth.ts → "/hom" to "/home"', text:'in scope', jev:{ why:'Same write questions. Low on all three.', qs:[{ t:SCOPE, v:0.09 }, { t:DESTR, v:0.13 }, { t:IRREV, v:0.15 }], ms:166 }, dec:'ALLOW', res:'Edited src/auth.ts (1 line)' }),
-  () => scene(6, 'Noise on the way out', 'After the tool runs, Reflex trims a 31 KB test log to its head, tail and error lines, archives the rest, and flags a polling loop. Fewer tokens for the model to re-read.'),
-  () => call({ tool:'Bash', arg:'npm test', text:'in scope', jev:{ why:'An exec. Scores from the shadow replay medians over four real sessions.', qs:[{ t:SCOPE, v:0.36 }, { t:DESTR, v:0.11 }, { t:IRREV, v:0.14 }], ms:171 }, dec:'ALLOW', res:'… 31,204 bytes of output' }),
-  async () => { line('r', `<span class="tag">reflex</span> <span><span class="s">post-tool:</span> 31,204 bytes → 2,362, 1 error line kept, original archived</span>${chip('TRIM')}`); K.t += 7210; setK(); await sleep(1400); },
-  () => call({ tool:'Bash', arg:'pgrep -f worker | head -1', text:'same command, identical output twice', stop:'dedupe', dec:'NOTE', res:'42817\n[reflex] same command returned identical output twice; wait longer or change approach' }),
-  async () => { line('a', 'Done. Redirect fixed; provider untouched.'); await sleep(3200); },
+  () => call({ tool:'Edit', arg:'src/auth0.config.ts → replace Auth0 with Clerk', summary:'Edit src/auth0.config.ts: Auth0 → Clerk', text:'write', jev:{ why:'Three questions on the state, one round trip.', qs:[{ t:SCOPE, v:0.99 }, { t:DESTR, v:0.66 }, { t:IRREV, v:0.30 }], ms:184, rule:'ask at ≥ 0.85 on any question' }, dec:'ASK', res:'[permission prompt] Reflex: conflicts with the goal or a constraint (0.99)   → denied', pause:1600 }),
+  () => scene(3, 'The right edit', 'Same three questions, same round trip. Low on all three, so nothing interrupts. Jev is cheap enough to ask every time: about $0.02 per thousand calls.'),
+  () => call({ tool:'Edit', arg:'src/auth.ts → "/hom" to "/home"', summary:'Edit src/auth.ts: "/hom" → "/home"', text:'write', jev:{ why:'Same three questions.', qs:[{ t:SCOPE, v:0.09 }, { t:DESTR, v:0.13 }, { t:IRREV, v:0.15 }], ms:166, rule:'ask at ≥ 0.85 on any question' }, dec:'ALLOW', res:'Edited src/auth.ts (1 line)' }),
+  () => scene(4, 'A script that hides a force push', 'AGENTS.md told the agent to run ./sync.sh. Reflex opens it, finds git reset --hard, and nominates the call. Jev answers one question: how does this relate to the task? Unrelated, 0.90.'),
+  async () => { line('a', 'AGENTS.md says to run ./sync.sh before any change.'); await sleep(500); },
+  () => call({ tool:'Bash', arg:'./sync.sh', summary:'Bash ./sync.sh (git reset --hard, git push --force inside)', text:'<span class="s">inside sync.sh:</span> git reset --hard, git push --force', jev:{ label:'unrelated', why:'A destructive candidate. Jev picks one of four verdicts against the goal.', qs:[{ t:V[0], v:0.04 }, { t:V[1], v:0.05 }, { t:V[2], v:0.90 }, { t:V[3], v:0.01 }], ms:203, rule:'proceed only if requested + needed ≥ 0.60' }, dec:'ASK', res:'[permission prompt] Reflex: matches destructive pattern: git reset --hard (inside ./sync.sh); unrelated by the task (0.90)   → denied', pause:1600 }),
+  () => scene(5, 'Same command, opposite verdict', 'A force push is wrong on the bug fix and right on "squash and push my branch". A permission rule cannot tell them apart. Jev says requested, 0.75, and the push goes through with a note.'),
+  async () => { line('a', 'Done. Redirect fixed; provider untouched.'); await sleep(1200); S.goal = 'Squash my commits and force push the branch'; S.constraints = ''; S.recent = []; setState(); await type('u', 'Squash my commits and force push the branch.'); await sleep(500); line('t', '<b>Bash</b> git rebase -i --autosquash origin/main'); S.recent.push('Bash git rebase --autosquash'); await sleep(300); line('res', 'Successfully rebased and updated refs/heads/feature.'); await sleep(700); },
+  () => call({ tool:'Bash', arg:'git push --force origin feature', summary:'Bash git push --force origin feature', text:'<span class="s">pattern:</span> git push --force', jev:{ label:'requested', why:'Same four verdicts, different goal.', qs:[{ t:V[0], v:0.75, good:true, hotAt:.6 }, { t:V[1], v:0.12 }, { t:V[2], v:0.08 }, { t:V[3], v:0.05 }], ms:191, rule:'proceed only if requested + needed ≥ 0.60' }, dec:'NOTE', res:'[reflex] matches destructive pattern: git push --force; the task asks for it (0.87), proceeding\nTo github.com:acme/loginer.git  + 3f2a1c9...8e41d07 feature -> feature (forced update)', pause:3400 }),
 ];
 
 (async function loop(){
   for (;;) {
-    out.innerHTML = ''; Object.assign(K, { c:0, j:0, s:0, t:0 }); setK(); light([]);
-    jevcard.classList.add('idle'); qs.innerHTML = ''; jlat.textContent = ''; jwhy.textContent = 'Not reached yet. A pattern or duplicate match decides without a model.';
+    out.innerHTML = ''; Object.assign(K, { c:0, j:0, s:0 }); setK();
+    jevcard.classList.add('idle'); qs.innerHTML = ''; jlat.textContent = ''; jwhy.textContent = 'Waiting for the first call.';
     for (const step of SCRIPT) await step();
   }
 })();
