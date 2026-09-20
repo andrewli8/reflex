@@ -27,7 +27,7 @@ const alive = (pid: number): boolean => { try { process.kill(pid, 0); return tru
 
 /** Exclusive create of daemon.json; if a live daemon owns it, return false. Stale files from dead pids are replaced. */
 export function takeLock(info: DaemonInfo, path = daemonJsonPath()): boolean {
-  mkdirSync(join(path, '..'), { recursive: true });
+  mkdirSync(join(path, '..'), { recursive: true, mode: 0o700 });
   if (existsSync(path)) {
     try { const prev = JSON.parse(readFileSync(path, 'utf8')) as DaemonInfo; if (prev.pid !== info.pid && alive(prev.pid)) return false; } catch { /* unreadable: replace */ }
     try { unlinkSync(path); } catch { /* ignore */ }
@@ -85,6 +85,7 @@ export async function serve(o: ServeOptions): Promise<{ server: Server; close: (
   };
 
   await new Promise<void>((resolve, reject) => { server.once('error', reject); server.listen(sock, () => resolve()); });
+  if (process.platform !== 'win32') { try { (await import('node:fs')).chmodSync(sock, 0o600); } catch { /* best effort */ } }
   touch();
   for (const sig of ['SIGTERM', 'SIGINT'] as const) process.once(sig, () => {
     setTimeout(() => process.exit(0), 5000).unref(); // hard exit if an inference call or a client keeps the loop busy

@@ -7,7 +7,7 @@ import { detectFlags, type Flags } from './detect.js';
 import { capMode, postPolicy, prePolicy, type Applied, type Decision, type HostAction, type PolicyKind, type PostDecision as PostPolicyDecision, type PostSignals, type PreSignals } from './policy.js';
 import { noneProvider, type Answer, type Provider, type Question } from './provider.js';
 import { postQuestions, questionsFor, QUESTION_SET_ID } from './questions.js';
-import { estimateTokens, extractConstraints, makeAction, serialize, sha, type Action, type ControlState } from './state.js';
+import { estimateTokens, extractConstraints, makeAction, redact, serialize, sha, type Action, type ControlState } from './state.js';
 import { identifiers } from './usefulness.js';
 
 export interface ToolCall { toolUseId: string; tool: string; args: Record<string, unknown>; description?: string }
@@ -178,13 +178,13 @@ export class Reflex {
     let decision = postPolicy(flags, null, bytes, this.config, action.class);
     let extra: Partial<ReflexEvent> = {};
     if (decision.kind === 'keep' && bytes >= this.config.trim.minBytes && !flags.protected && this.provider.maxStateTokens > 0) {
-      const state = `${this.state(action)}\nRESULT (${bytes} bytes): ${digest(output, 600, 300)}`;
+      const state = `${this.state(action)}\nRESULT (${bytes} bytes): ${digest(output, 600, 300)}`; // digest already redacted
       const r = await this.ask(state, postQuestions, `post|${resultHash}|${QUESTION_SET_ID}`);
       decision = postPolicy(flags, r.signals as PostSignals | null, bytes, this.config, action.class);
       extra = { ...r.meta, signals: r.signals };
     }
     const archived = decision.kind === 'keep' || !this.archiveDir ? undefined : archive(this.archiveDir, call.toolUseId, output);
-    const replacement = decision.reason === 'identical' && sameAs
+    const replacement0 = decision.reason === 'identical' && sameAs
       ? `[reflex] Output identical to step ${sameAs.step} (${sameAs.summary.slice(0, 60)}), ${bytes} bytes, not repeated.${archived ? ` Full copy: Read ${archived}` : ''}`
       : decision.kind === 'trim' ? trim(output, this.config, decision.reason, archived, action.class) : decision.kind === 'drop' ? `[reflex] Result omitted (${bytes} bytes): ${decision.reason}.${archived ? ` Full output archived at ${archived}.` : ''} Re-run with 'reflex:force' if needed.` : undefined;
     const novel: string[] = [];
@@ -192,6 +192,7 @@ export class Reflex {
     const step0 = idx >= 0 ? action.step : this.actions.length + 1;
     if (novel.length) this.novelByStep.set(step0, new Set(novel));
     const userMessage = this.contextGauge();
+    const replacement = replacement0; // trimmed text is built from the original output; the model already saw that output, so no redaction here
     const updated: Action = {
       ...action,
       outcome: flags.error ? 'error' : decision.kind === 'keep' ? 'ok' : 'trimmed',
@@ -210,9 +211,10 @@ export class Reflex {
     return { kind: decision.kind, ...(replacement !== undefined ? { replacement } : {}), ...(decision.reason ? { reason: decision.reason } : {}), ...(userMessage ? { userMessage } : {}), event };
   }
 
+  /** Everything a provider sees goes through redact(): goal and prompts are user text and can contain pasted secrets too. */
   private state(proposed: Action): string {
     const s: ControlState = { goal: this.goal, constraints: this.constraints, plan: this.plan, recentActions: this.actions.slice(-8), proposedAction: proposed, step: proposed.step, cwd: this.cwd, ...(this.latestPrompt && this.latestPrompt !== this.goal ? { latestPrompt: this.latestPrompt } : {}) };
-    return serialize(s, this.provider.maxStateTokens);
+    return redact(serialize(s, this.provider.maxStateTokens));
   }
 
   private async ask<Q extends Record<string, Question>>(state: string, questions: Q, keySrc: string): Promise<{ signals: Record<string, number> | null; meta: Partial<ReflexEvent> }> {
@@ -238,7 +240,7 @@ export class Reflex {
   }
   private writeCache(key: string, entry: { at: number; answers: Record<string, Answer> }): void {
     if (!this.cacheDir) return;
-    try { mkdirSync(this.cacheDir, { recursive: true }); writeFileSync(join(this.cacheDir, `${key}.json`), JSON.stringify(entry)); } catch { /* cache is best-effort */ }
+    try { mkdirSync(this.cacheDir, { recursive: true, mode: 0o700 }); writeFileSync(join(this.cacheDir, `${key}.json`), JSON.stringify(entry), { mode: 0o600 }); } catch { /* cache is best-effort */ }
   }
 
   private neverIntervene(call: ToolCall, a: Action): boolean {
@@ -390,7 +392,7 @@ export function isRepetitive(output: string): boolean {
 }
 
 function digest(s: string, head: number, tail: number): string {
-  const one = s.replace(/\s+/g, ' ').trim();
+  const one = redact(s.replace(/\s+/g, ' ').trim());
   if (one.length <= head + tail) return one;
   return tail > 0 ? `${one.slice(0, head)} … ${one.slice(-tail)}` : one.slice(0, head);
 }
@@ -415,9 +417,9 @@ export function trim(output: string, cfg: ReflexConfig, reason?: string, archive
 /** Write the untrimmed output next to the session logs. Returns the path, or undefined if the write failed. */
 function archive(dir: string, toolUseId: string, output: string): string | undefined {
   try {
-    mkdirSync(dir, { recursive: true });
+    mkdirSync(dir, { recursive: true, mode: 0o700 });
     const path = join(dir, `${(toolUseId || 'result').replace(/[^A-Za-z0-9_-]/g, '_')}-${Date.now()}.txt`);
-    writeFileSync(path, output);
+    writeFileSync(path, redact(output), { mode: 0o600 });
     return path;
   } catch { return undefined; }
 }

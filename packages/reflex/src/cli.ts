@@ -44,7 +44,7 @@ export function init(cwd: string, hookCommand = defaultHookCommand()): { path: s
  */
 export function writeShim(home = reflexHome()): string {
   const dir = join(home, 'bin');
-  mkdirSync(dir, { recursive: true });
+  mkdirSync(dir, { recursive: true, mode: 0o700 });
   const here = dirname(fileURLToPath(import.meta.url));
   let globalRoot = '';
   try { globalRoot = execSync('npm root -g', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(); } catch { /* no npm */ }

@@ -133,7 +133,11 @@ Tool results nothing referenced collapse to one line at each checkpoint. That is
 
 **Does it slow the agent down?** The hook starts in about 30 ms. A decision model adds 130 to 500 ms on the calls that reach it, which you can limit with `modelClasses`.
 
-**What does it store?** Session logs and archived tool output under `~/.reflex`. Nothing leaves your machine unless you configure a hosted model.
+**What does it store?** Session logs and archived tool output under `~/.reflex`, owner-only permissions, with API keys, bearer tokens and `KEY=value` secrets redacted before they are written. Nothing leaves your machine unless you configure a hosted model.
+
+**What does a hosted model see?** With `jev` or `llm` configured, each judged call sends a text state under a few hundred tokens: your task's first prompt and latest prompt, the extracted constraints, the last eight tool calls as one-line summaries with 80-character result digests, and the proposed call. The same redaction runs on that text first. Full tool outputs and file contents are never sent.
+
+**Can tool output manipulate the agent through Reflex?** The ledger and notes re-inject short, labelled digests of earlier results, never full output. Treat them like any other tool result: they carry no more authority than the text they summarize.
 
 **Where are the caveats?** `docs/PLAN.md` has every measurement, including the ones that did not work.
 

@@ -14,8 +14,8 @@ export function sessionPath(sessionId: string, agentId?: string): string {
 
 /** One line per event, O_APPEND. Parallel hooks append without coordination; no line is ever rewritten. */
 export function appendEvent(path: string, e: ReflexEvent): void {
-  mkdirSync(join(path, '..'), { recursive: true });
-  appendFileSync(path, JSON.stringify(e) + '\n');
+  mkdirSync(join(path, '..'), { recursive: true, mode: 0o700 });
+  appendFileSync(path, JSON.stringify(e) + '\n', { mode: 0o600 });
 }
 
 /**
@@ -52,7 +52,7 @@ export function readSecret(name: string): string | undefined {
 }
 export function writeSecret(name: string, value: string): string {
   const path = join(reflexHome(), 'secrets.json');
-  mkdirSync(reflexHome(), { recursive: true });
+  mkdirSync(reflexHome(), { recursive: true, mode: 0o700 });
   let current: Record<string, string> = {};
   try { current = JSON.parse(readFileSync(path, 'utf8')); } catch { /* new */ }
   writeFileSync(path, JSON.stringify({ ...current, [name]: value }, null, 2) + '\n', { mode: 0o600 });

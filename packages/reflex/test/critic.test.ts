@@ -296,3 +296,21 @@ describe('identical collapse, learning, failures', () => {
     expect(led).toMatch(/npm run lint failed at step 3, never retried/);
   });
 });
+
+describe('redaction', () => {
+  it('strips secrets from summaries, digests, archives and provider state', async () => {
+    const { redact } = await import('../src/state.js');
+    expect(redact('export TYPESAFE_API_KEY="apikey_292a928a88b2c254960850e721fc40ff53b_f2c3ea47" && curl -H "Authorization: Bearer sk-ant-abcdefghijklmnopqrstuvwxyz"')).toBe('export TYPESAFE_API_KEY=[redacted] && curl -H "Authorization: [redacted] [redacted]"');
+    expect(redact('password=hunter22 token: ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ12 sha256:a920c3e99340de2fe')).toBe('password=[redacted] token: [redacted] sha256:a920c3e99340de2fe');
+    const seen: string[] = [];
+    const provider = { name: 'fake', maxStateTokens: 8000, decide: async (st: string, q: Record<string, unknown>) => { seen.push(st); return Object.fromEntries(Object.keys(q).map((k) => [k, { type: 'boolean', p: 0.1 }])) as never; } };
+    const r = new Reflex({ cwd, goal: 'Deploy. My key is sk-ant-secretsecretsecretsecret ok', provider, log: () => {} });
+    const c = call('Bash', { command: 'AWS_SECRET_ACCESS_KEY=abcdef123456789 aws s3 ls' });
+    const d = await r.pre(c);
+    expect(d.event.summary).not.toContain('abcdef123456789');
+    expect(seen[0]).not.toContain('secretsecret');
+    expect(seen[0]).not.toContain('abcdef123456789');
+    await r.post(c, { output: 'x'.repeat(2500) + '\nAKIAIOSFODNN7EXAMPLE\n' });
+    expect(JSON.stringify(r.recentActions)).not.toContain('AKIAIOSFODNN7EXAMPLE');
+  });
+});

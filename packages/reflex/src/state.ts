@@ -40,6 +40,21 @@ const CONSTRAINT_RE = /^(?:please\s+)?(?:do not|don't|never|always|only|avoid|mu
 const NOT_CONSTRAINT_RE = /\bnot only\b|\bdo not (?:only|need|have|know|think|seem|want)\b|`|—|\b(?:I|I've|I'm|we've|they|it'll|you know|unfortunately|because)\b.*\b(?:never|don't|do not)\b/i;
 const SHOUTING_RE = /^[^a-z]*$/; // case-sensitive: no lowercase letter at all
 
+/**
+ * Strip secret-looking values before anything is logged, archived, summarised or sent to a provider.
+ * Covers name=value pairs with sensitive names, bearer/basic auth headers, and well-known token prefixes.
+ * Hashes and ordinary identifiers are left alone; false positives here cost nothing, misses cost a key.
+ */
+const SECRET_KV = /\b([\w.-]*(?:api[_-]?key|secret|token|passw(?:or)?d|auth(?:orization)?|private[_-]?key|access[_-]?key|client[_-]?secret|session[_-]?id|cookie)[\w.-]*)(\s*[=:]\s*)(["']?)([^\s"'&;,]{6,})\3/gi;
+const SECRET_HEADER = /\b(bearer|basic|token)\s+([A-Za-z0-9._~+/=-]{16,})/gi;
+const SECRET_TOKEN = /\b(?:sk-[A-Za-z0-9_-]{16,}|sk-ant-[A-Za-z0-9_-]{16,}|apikey_[A-Za-z0-9_]{16,}|ghp_[A-Za-z0-9]{20,}|gho_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[abpr]-[A-Za-z0-9-]{16,}|AIza[0-9A-Za-z_-]{30,}|AKIA[0-9A-Z]{16}|eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}|-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----)/g;
+export function redact(text: string): string {
+  return text
+    .replace(SECRET_TOKEN, '[redacted]')
+    .replace(SECRET_HEADER, (_m, kind: string) => `${kind} [redacted]`)
+    .replace(SECRET_KV, (_m, name: string, sep: string) => `${name}${sep}[redacted]`);
+}
+
 export const sha = (s: string): string => createHash('sha256').update(s).digest('hex').slice(0, 16);
 export const estimateTokens = (s: string): number => Math.ceil(s.length / 4);
 const clip = (s: string, n: number): string => (s.length > n ? s.slice(0, n) : s);
@@ -82,7 +97,7 @@ export function summarize(tool: string, args: Record<string, unknown>): string {
     tool === 'Grep' ? `"${a['pattern']}" ${a['path'] ?? ''}` :
     a['file_path'] ?? a['path'] ?? a['pattern'] ?? a['query'] ?? a['url'] ?? a['prompt'] ??
     Object.values(args).find((v): v is string => typeof v === 'string') ?? '';
-  return clip(`${tool} ${(body ?? '').replace(/\s+/g, ' ').trim()}`.trim(), 120);
+  return clip(redact(`${tool} ${(body ?? '').replace(/\s+/g, ' ').trim()}`.trim()), 120);
 }
 
 export function makeAction(tool: string, args: Record<string, unknown>, cwd: string, step: number): Action {

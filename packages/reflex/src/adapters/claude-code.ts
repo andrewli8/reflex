@@ -37,8 +37,8 @@ export async function handleHook(input: HookInput, host: Host = 'claude-code'): 
 /** Failures never block the host, but they must be visible somewhere: one line per failure in ~/.reflex/errors.log. */
 function logError(input: HookInput, e: unknown): void {
   try {
-    mkdirSync(reflexHome(), { recursive: true });
-    appendFileSync(join(reflexHome(), 'errors.log'), `${new Date().toISOString()} ${input.hook_event_name} ${input.tool_name ?? ''} ${(e as Error)?.stack ?? String(e)}\n`);
+    mkdirSync(reflexHome(), { recursive: true, mode: 0o700 });
+    appendFileSync(join(reflexHome(), 'errors.log'), `${new Date().toISOString()} ${input.hook_event_name} ${input.tool_name ?? ''} ${String((e as Error)?.stack ?? e).split('\n').slice(0, 4).join(' | ')}\n`);
   } catch { /* nowhere left to report */ }
 }
 
