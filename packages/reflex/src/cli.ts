@@ -2,6 +2,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { realpathSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { readdirSync, statSync, unlinkSync } from 'node:fs';
 import { collapseSimulation, formatReport, replayTranscript, signalSeparation, type ReplayReport } from './replay.js';
@@ -108,6 +109,7 @@ export function findTranscripts(root = join(homedir(), '.claude', 'projects'), m
   let dirs: string[] = [];
   try { dirs = readdirSync(root); } catch { return []; }
   for (const d of dirs) {
+    if (/-private-var-folders-|-private-tmp-|-tmp-/.test(d)) continue; // throwaway sessions in temp dirs are not the user's work
     let files: string[] = [];
     try { files = readdirSync(join(root, d)); } catch { continue; }
     for (const f of files) {
@@ -269,4 +271,6 @@ async function main(argv: string[]): Promise<void> {
   process.exitCode = 1;
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) void main(process.argv.slice(2));
+// Through an npm bin symlink argv[1] is the link, not this file; compare real paths or the CLI silently does nothing.
+const invokedDirectly = (() => { try { return process.argv[1] ? realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url)) : false; } catch { return false; } })();
+if (invokedDirectly) void main(process.argv.slice(2));
