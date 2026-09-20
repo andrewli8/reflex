@@ -4,6 +4,8 @@ import { appendEvent, readTail, sessionPath } from '../session.js';
 import { readGoal, readTailState } from '../transcript.js';
 import { join } from 'node:path';
 import { appendFileSync, mkdirSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { resolve } from 'node:path';
 import { reflexHome } from '../session.js';
 import { providerFromConfig } from '../providers/index.js';
 
@@ -42,8 +44,17 @@ function logError(input: HookInput, e: unknown): void {
   } catch { /* nowhere left to report */ }
 }
 
+/** Transcripts are read only from the host's own directories or the project: `handleHook` is exported and must not become an arbitrary file read. */
+function safeTranscript(path: string | undefined, cwd: string): string | undefined {
+  if (!path) return undefined;
+  const abs = resolve(path);
+  const roots = [join(homedir(), '.claude'), join(homedir(), '.codex'), resolve(cwd)];
+  return roots.some((r) => abs === r || abs.startsWith(r + '/')) ? abs : undefined;
+}
+
 async function handle(input: HookInput, host: Host): Promise<HookOutput> {
   const cwd = input.cwd ?? process.cwd();
+  input = { ...input, ...(safeTranscript(input.transcript_path, cwd) ? { transcript_path: safeTranscript(input.transcript_path, cwd) } : { transcript_path: undefined }) } as HookInput;
   const config = loadConfig(cwd);
   const path = sessionPath(input.session_id, input.agent_id);
   const history = readTail(path);

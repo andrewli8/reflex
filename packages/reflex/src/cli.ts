@@ -48,7 +48,9 @@ export function writeShim(home = reflexHome()): string {
   const here = dirname(fileURLToPath(import.meta.url));
   let globalRoot = '';
   try { globalRoot = execSync('npm root -g', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(); } catch { /* no npm */ }
-  const candidates = [globalRoot && join(globalRoot, 'agent-reflex', 'dist', 'hook-bin.js'), join(here, 'hook-bin.js')].filter(Boolean);
+  // Paths are interpolated into a shell script that runs on every hook call: refuse anything outside a safe charset.
+  const SAFE_PATH = /^[A-Za-z0-9_./@ -]+$/;
+  const candidates = [globalRoot && join(globalRoot, 'agent-reflex', 'dist', 'hook-bin.js'), join(here, 'hook-bin.js')].filter((c): c is string => Boolean(c) && SAFE_PATH.test(c));
   const shim = [
     '#!/bin/sh',
     '# Reflex hook shim, written by `reflex init`. Tries a global install first so upgrades take effect without re-running init.',

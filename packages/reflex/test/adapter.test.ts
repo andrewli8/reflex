@@ -140,3 +140,14 @@ describe('secrets and shim', () => {
     expect(rf(shim, 'utf8')).toContain('hook-bin.js');
   });
 });
+
+describe('transcript containment', () => {
+  it('ignores a transcript_path outside ~/.claude, ~/.codex or the project', async () => {
+    const { writeFileSync: wf } = await import('node:fs');
+    const outside = join(mkdtempSync(join(tmpdir(), 'elsewhere-')), 't.jsonl');
+    wf(outside, JSON.stringify({ type: 'user', message: { role: 'user', content: 'Secret goal. Never do X.' } }) + '\n');
+    await handleHook({ session_id: 'tc1', cwd, transcript_path: outside, hook_event_name: 'PreToolUse', tool_use_id: 'a', tool_name: 'Read', tool_input: { file_path: 'a.ts' } } as HookInput);
+    const log = readFileSync(join(home, 'sessions', 'tc1.jsonl'), 'utf8');
+    expect(log).not.toContain('Secret goal');
+  });
+});
