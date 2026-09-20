@@ -32,7 +32,7 @@ Measured, not estimated. Details and the scripts are in `docs/PLAN.md`.
 
 ## See it
 
-`apps/demo/story.html` is the one to record: six beats, one tool call each, autoplaying and looping. `apps/demo/flow.html` plays the two sessions as a flow: packets are tool calls, the tank is what the model re-reads every step. `apps/demo/infographic.html` is the one-page summary (`infographic.png` beside it). `apps/demo/index.html` replays the real benchmark trace step by step.
+`apps/demo/terminal.html` shows the pipeline inline in a terminal replay: each tool call, then the Reflex line lighting up classify, dedupe, script scan, Jev with its score and latency, and the decision. `apps/demo/story.html` is the cinematic version: six beats, one tool call each, autoplaying and looping. `apps/demo/flow.html` plays the two sessions as a flow: packets are tool calls, the tank is what the model re-reads every step. `apps/demo/infographic.html` is the one-page summary (`infographic.png` beside it). `apps/demo/index.html` replays the real benchmark trace step by step.
 
 ## How it works
 
