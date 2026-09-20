@@ -9,6 +9,10 @@ export interface ReflexConfig {
   provider?: string;
   /** Unattended levels: a call that would ask goes to deny with the reason instead, so the agent routes around it. */
   askBecomesDeny: boolean;
+  /** Let the decision model judge destructive-pattern hits in context: clearly in scope becomes a note instead of a prompt. */
+  judgePatterns: boolean;
+  /** Ask the model about reads too (redundant/relevant). Measured at coin-flip quality; off outside ultra. */
+  modelOnReads: boolean;
   /** AI SDK only: let a decision model pick a small or large model per step. */
   routing: { enabled: boolean };
   collapse: { after: number; checkpointEvery: number };
@@ -20,6 +24,8 @@ export interface ReflexConfig {
     redundant: number;
     redundantNear: number;
     relevantTrim: number;
+    /** requested + needed probability at or above this: a destructive-pattern hit is treated as intended and only noted. */
+    patternIntended: number;
   };
   /** Tool names, path globs or command prefixes that are never nudged, skipped or replanned. Destructive-pattern ASK still applies. */
   neverIntervene: string[];
@@ -41,6 +47,8 @@ export const defaultConfig: ReflexConfig = {
   level: 'nudge',
   mode: 'nudge',
   askBecomesDeny: false,
+  judgePatterns: false,
+  modelOnReads: false,
   routing: { enabled: false },
   collapse: { after: 5, checkpointEvery: 10 },
   thresholds: {
@@ -51,6 +59,7 @@ export const defaultConfig: ReflexConfig = {
     redundant: 0.9,
     redundantNear: 0.7,
     relevantTrim: 0.3,
+    patternIntended: 0.6,
   },
   neverIntervene: [],
   maxInterventionsPer5Steps: 2,
@@ -68,9 +77,9 @@ export const LEVEL_PRESETS: Record<Level, Partial<ReflexConfig>> = {
   off:   { mode: 'shadow', provider: 'none', trim: { ...defaultConfig.trim, enabled: false }, gauge: { ...defaultConfig.gauge, enabled: false }, ledger: { enabled: false } },
   watch: { mode: 'shadow', provider: 'none', trim: { ...defaultConfig.trim, enabled: false } },
   nudge: { mode: 'nudge', provider: 'none' },
-  ask:   { mode: 'enforce', provider: 'jev' },
-  auto:  { mode: 'enforce', provider: 'jev', askBecomesDeny: true, trim: { ...defaultConfig.trim, minBytes: 1200 }, collapse: { after: 3, checkpointEvery: 5 } },
-  ultra: { mode: 'enforce', provider: 'jev', askBecomesDeny: true, trim: { ...defaultConfig.trim, minBytes: 600, execMinBytes: 400 }, collapse: { after: 3, checkpointEvery: 5 }, routing: { enabled: true }, maxInterventionsPer5Steps: 4 },
+  ask:   { mode: 'enforce', provider: 'jev', judgePatterns: true },
+  auto:  { mode: 'enforce', provider: 'jev', askBecomesDeny: true, judgePatterns: true, trim: { ...defaultConfig.trim, minBytes: 1200 }, collapse: { after: 3, checkpointEvery: 5 } },
+  ultra: { mode: 'enforce', provider: 'jev', askBecomesDeny: true, judgePatterns: true, modelOnReads: true, trim: { ...defaultConfig.trim, minBytes: 600, execMinBytes: 400 }, collapse: { after: 3, checkpointEvery: 5 }, routing: { enabled: true }, maxInterventionsPer5Steps: 4 },
 };
 
 export function applyLevel(level: Level): ReflexConfig {

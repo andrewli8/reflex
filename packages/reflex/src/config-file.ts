@@ -12,6 +12,8 @@ function pick(raw: unknown): Partial<ReflexConfig> {
   if (typeof r['level'] === 'string' && (LEVELS as string[]).includes(r['level'])) out.level = r['level'] as Level;
   if (typeof r['mode'] === 'string' && MODES.has(r['mode'])) out.mode = r['mode'] as ReflexConfig['mode'];
   if (typeof r['askBecomesDeny'] === 'boolean') out.askBecomesDeny = r['askBecomesDeny'];
+  if (typeof r['judgePatterns'] === 'boolean') out.judgePatterns = r['judgePatterns'];
+  if (typeof r['modelOnReads'] === 'boolean') out.modelOnReads = r['modelOnReads'];
   if (r['routing'] && typeof r['routing'] === 'object') out.routing = { ...defaultConfig.routing, ...(r['routing'] as object) };
   if (r['collapse'] && typeof r['collapse'] === 'object') out.collapse = { ...defaultConfig.collapse, ...(r['collapse'] as object) };
   if (Array.isArray(r['neverIntervene'])) out.neverIntervene = r['neverIntervene'].filter((x): x is string => typeof x === 'string');

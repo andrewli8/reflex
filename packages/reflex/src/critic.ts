@@ -6,7 +6,7 @@ import { defaultConfig, type ReflexConfig } from './config.js';
 import { detectFlags, type Flags } from './detect.js';
 import { capMode, postPolicy, prePolicy, type Applied, type Decision, type HostAction, type PolicyKind, type PostDecision as PostPolicyDecision, type PostSignals, type PreSignals } from './policy.js';
 import { noneProvider, type Answer, type Provider, type Question } from './provider.js';
-import { postQuestions, questionsFor, QUESTION_SET_ID } from './questions.js';
+import { patternQuestions, postQuestions, questionsFor, QUESTION_SET_ID } from './questions.js';
 import { estimateTokens, extractConstraints, makeAction, redact, serialize, sha, type Action, type ControlState } from './state.js';
 import { identifiers } from './usefulness.js';
 
@@ -131,8 +131,23 @@ export class Reflex {
       return { policy, host, event };
     };
 
-    // 1. Destructive pattern: always ASK, before overrides and neverIntervene.
-    if (cls.destructivePattern) return finish({ kind: 'ask', reason: `matches destructive pattern: ${cls.destructivePattern}` }, { patternAsk: cls.destructivePattern });
+    // 1. Destructive pattern: before overrides and neverIntervene. With a model and judgePatterns, the pattern is a candidate
+    //    and the model decides whether it is what the user asked for; otherwise it is always an ASK.
+    if (cls.destructivePattern) {
+      const reason = `matches destructive pattern: ${cls.destructivePattern}`;
+      if (this.config.judgePatterns && this.provider.maxStateTokens > 0) {
+        const state = `${this.state(proposed)}\nNOTE: the proposed call matches a destructive pattern (${cls.destructivePattern}). Decide whether the user's task calls for it.`;
+        const r = await this.ask(state, patternQuestions, `${this.goal}|${this.constraints.join(';')}|${proposed.summary}|pattern|${QUESTION_SET_ID}`);
+        const sg = r.signals ?? {};
+        const intended = (sg['verdict:requested'] ?? 0) + (sg['verdict:needed'] ?? 0);
+        const top = ['requested', 'needed', 'unrelated', 'forbidden'].sort((a, b) => (sg[`verdict:${b}`] ?? 0) - (sg[`verdict:${a}`] ?? 0))[0]!;
+        if (r.signals && intended >= this.config.thresholds.patternIntended) {
+          return finish({ kind: 'warn', reason: `${reason}; the task ${top === 'requested' ? 'asks for' : 'needs'} it (${intended.toFixed(2)}), proceeding` }, { patternAsk: cls.destructivePattern, ...r.meta, signals: r.signals });
+        }
+        return finish({ kind: 'ask', reason: `${reason}${r.signals ? `; ${top} by the task (${(sg[`verdict:${top}`] ?? 0).toFixed(2)})` : ''}` }, { patternAsk: cls.destructivePattern, ...r.meta, signals: r.signals });
+      }
+      return finish({ kind: 'ask', reason }, { patternAsk: cls.destructivePattern });
+    }
     // 2. Explicit override.
     if (forced) return finish({ kind: 'execute', reason: 'override' }, {});
     // 3. neverIntervene, then what this session has already overruled.
@@ -147,7 +162,7 @@ export class Reflex {
     }
     let extra: Partial<ReflexEvent> = { flags };
     // 5. Provider, only when nothing short-circuited.
-    if (policy.kind === 'execute' && this.provider.maxStateTokens > 0 && this.config.modelClasses.includes(cls.class)) {
+    if (policy.kind === 'execute' && this.provider.maxStateTokens > 0 && this.config.modelClasses.includes(cls.class) && (!cls.readOnly || this.config.modelOnReads)) {
       const questions = questionsFor(cls.readOnly, this.provider.maxStateTokens);
       const state = this.state(proposed);
       const r = await this.ask(state, questions, `${this.goal}|${this.constraints.join(';')}|${proposed.summary}|${QUESTION_SET_ID}`);
@@ -452,6 +467,7 @@ function toSignals(answers: Record<string, Answer>): Record<string, number> {
   const out: Record<string, number> = {};
   for (const [k, a] of Object.entries(answers)) {
     out[k] = a.type === 'boolean' ? a.p : a.type === 'score' ? (a.probabilities.length > 1 ? a.score / (a.probabilities.length - 1) : a.score) : a.confidence;
+    if (a.type === 'choice') for (const [opt, p] of Object.entries(a.probabilities)) out[`${k}:${opt}`] = p; // keep the distribution, not only the winner
   }
   return out;
 }

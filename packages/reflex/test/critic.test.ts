@@ -348,3 +348,29 @@ describe('edit summaries', () => {
     expect(summarize('Edit', { file_path: 'k.env', new_string: 'API_KEY=apikey_0123456789abcdefghijklmnop' })).not.toContain('0123456789');
   });
 });
+
+describe('pattern judgment', () => {
+  const fake = (verdict: 'requested' | 'forbidden') => ({ name: 'fake', maxStateTokens: 8000, decide: async () => ({ verdict: { type: 'choice', choice: verdict, confidence: 0.9, probabilities: verdict === 'requested' ? { requested: 0.75, needed: 0.2, unrelated: 0.03, forbidden: 0.02 } : { requested: 0, needed: 0.01, unrelated: 0.02, forbidden: 0.97 } } }) as never });
+  it('a force push the task asked for becomes a note; one it did not asks', async () => {
+    const asked = new Reflex({ cwd, goal: 'Rewrite history on my feature branch and force push it.', config: { ...defaultConfig, mode: 'enforce', judgePatterns: true }, provider: fake('requested'), log: () => {} });
+    const d1 = await asked.pre(call('Bash', { command: 'git push --force origin feature' }));
+    expect(d1.policy.kind).toBe('warn');
+    expect(d1.host.action).toBe('allow');
+    expect(d1.host.note).toContain('asks for it');
+    const not = new Reflex({ cwd, goal: 'Fix a typo. Do not rewrite history.', config: { ...defaultConfig, mode: 'enforce', judgePatterns: true }, provider: fake('forbidden'), log: () => {} });
+    const d2 = await not.pre(call('Bash', { command: 'git push --force origin main' }));
+    expect(d2.host.action).toBe('ask');
+    expect(d2.host.reason).toContain('0.97');
+  });
+  it('without a model, patterns always ask; reads skip the model unless modelOnReads', async () => {
+    const r = new Reflex({ cwd, goal: 'Rewrite history.', config: { ...defaultConfig, mode: 'enforce', judgePatterns: true }, log: () => {} });
+    expect((await r.pre(call('Bash', { command: 'git push --force' }))).host.action).toBe('ask');
+    let calls = 0;
+    const p = { name: 'f', maxStateTokens: 8000, decide: async (_s: string, q: Record<string, unknown>) => { calls++; return Object.fromEntries(Object.keys(q).map((k) => [k, { type: 'boolean', p: 0.1 }])) as never; } };
+    const r2 = new Reflex({ cwd, goal: 'g', config: { ...defaultConfig, mode: 'enforce' }, provider: p, log: () => {} });
+    await r2.pre(call('Read', { file_path: 'a.ts' }));
+    expect(calls).toBe(0);
+    await r2.pre(call('Edit', { file_path: 'a.ts', old_string: 'a', new_string: 'b' }));
+    expect(calls).toBe(1);
+  });
+});

@@ -95,9 +95,11 @@ One knob. `reflex level <name>` writes it to `reflex.config.json` (`--global` fo
 | `off` | nothing; hooks stay installed | agent decides | none |
 | `watch` | logs only, so `report` and `replay` work | agent decides | none |
 | `nudge` (default) | notes on duplicates and loops, trim, constraints restated, ledger after compaction | your permission prompt | none |
-| `ask` | `nudge` plus duplicates denied and Jev scoring every write against your constraints | your permission prompt | Jev |
+| `ask` | `nudge` plus duplicates denied and Jev judging every write against your constraints. Destructive commands prompt only when the task did not call for them | your permission prompt, when it matters | Jev |
 | `auto` | unattended: risky calls are denied with a reason so the agent routes around them; aggressive trim and collapse | denied | Jev |
 | `ultra` | `auto` plus token-first trim, Jev on reads, and per-step model routing on the AI SDK | denied | Jev |
+
+At `ask` and above, a destructive command is a candidate, not a verdict: Jev answers whether the task asked for it, needs it, does not need it, or forbids it. Measured on Jev: 0.75 / 0.70 / 0.97 / 0.99 on the four cases. Asked-for and needed proceed with a note; the other two go to your prompt. Without a model, every destructive command prompts.
 
 Start at `nudge`. Move to `ask` once `reflex report` looks right on your history. Use `auto` or `ultra` for CI and overnight runs, where a prompt would hang forever. Any key in the config file still overrides its level's preset.
 
