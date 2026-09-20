@@ -319,6 +319,7 @@ describe('levels', () => {
   it('presets map to the right behaviour and explicit keys override', async () => {
     const { applyLevel } = await import('../src/config.js');
     expect(applyLevel('watch')).toMatchObject({ mode: 'shadow', provider: 'none' });
+    expect(applyLevel('ask')).toMatchObject({ level: 'ask' });
     expect(applyLevel('ask')).toMatchObject({ mode: 'enforce', provider: 'jev', askBecomesDeny: false });
     expect(applyLevel('auto')).toMatchObject({ mode: 'enforce', askBecomesDeny: true, collapse: { after: 3, checkpointEvery: 5 } });
     expect(applyLevel('ultra').routing.enabled).toBe(true);

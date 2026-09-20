@@ -8,6 +8,7 @@ import { collapseSimulation, formatReport, replayTranscript, signalSeparation, t
 
 import { loadConfig } from './config-file.js';
 import { LEVELS, type Level } from './config.js';
+import { createInterface } from 'node:readline/promises';
 import { daemonProvider, providerFromConfig } from './providers/index.js';
 import { computeStats, formatStats, loadAllLogs } from './stats.js';
 import { buildReport, formatReport30 } from './report.js';
@@ -88,6 +89,17 @@ export function initCodex(cwd: string, hookCommand = defaultHookCommand('codex')
   }
   writeFileSync(path, JSON.stringify({ ...file, hooks }, null, 2) + '\n');
   return { path, added, command: hookCommand };
+}
+
+/** The product is the judgment; without a Jev key it runs limited (deterministic candidates only). Ask once at init. */
+async function ensureJevKey(): Promise<void> {
+  if (readSecret('TYPESAFE_API_KEY')) return;
+  if (!process.stdin.isTTY) { console.log('\nNo Jev key found: Reflex runs limited (no judgment on destructive commands or constraints). Add one with: reflex key jev <key>'); return; }
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  const key = (await rl.question('\nJev API key from TypeSafe (typesafe.ai), enter to skip: ')).trim();
+  rl.close();
+  if (key) console.log(`stored in ${writeSecret('TYPESAFE_API_KEY', key)}`);
+  else console.log('Running limited until a key is added: reflex key jev <key>');
 }
 
 /** Newest-first list of Claude Code transcripts under ~/.claude/projects. */
@@ -171,7 +183,7 @@ function doctor(): void {
   console.log([
     `node       ${process.version}`,
     `home       ${reflexHome()}`,
-    `level      ${cfg.level}  (mode ${cfg.mode}, provider ${cfg.provider ?? 'none'}${cfg.askBecomesDeny ? ', risky calls denied' : ''}${cfg.routing.enabled ? ', routing on' : ''})`,
+    `level      ${cfg.level}  (mode ${cfg.mode}, provider ${cfg.provider ?? 'none'}${cfg.askBecomesDeny ? ', risky calls denied' : ''}${cfg.routing.enabled ? ', routing on' : ''})${cfg.provider === 'jev' && !readSecret('TYPESAFE_API_KEY') ? '  LIMITED: no Jev key, judgment off' : ''}`,
     `keys       jev ${readSecret('TYPESAFE_API_KEY') ? 'ok' : 'missing (reflex key jev <key>)'}   llm ${readSecret('ANTHROPIC_API_KEY') ? 'ok' : 'missing'}`,
     `socket     ${socketPath()} ${existsSync(socketPath()) ? '(exists)' : '(absent)'}`,
     `daemon     ${info ? `pid ${info.pid} provider ${info.provider} ${alive ? 'alive' : 'DEAD (stale daemon.json)'}` : 'not running'}`,
@@ -216,7 +228,8 @@ async function main(argv: string[]): Promise<void> {
       if (!argv.includes('--all')) return;
     }
     const r = init(root);
-    console.log(r.added.length ? `Reflex hooks added to ${r.path} (${r.added.join(', ')}). Command: ${r.command}. Mode: nudge. Reflex advises Claude Code's permission system; it is not a security boundary.` : `Reflex hooks already present in ${r.path}.`);
+    console.log(r.added.length ? `Reflex hooks added to ${r.path} (${r.added.join(', ')}). Command: ${r.command}. Level: ask. Reflex advises Claude Code's permission system; it is not a security boundary.` : `Reflex hooks already present in ${r.path}.`);
+    await ensureJevKey();
     if (!argv.includes('--no-report')) {
       // First-run moment: show what Reflex would have done on the user's own history, then the near-miss report.
       const paths = findTranscripts().slice(0, 20);
@@ -231,7 +244,7 @@ async function main(argv: string[]): Promise<void> {
   }
   if (cmd === 'level') {
     const name = argv[1] as Level | undefined;
-    if (!name || !LEVELS.includes(name)) { console.log(`usage: reflex level <${LEVELS.join('|')}> [--global]\n  off    hooks installed, do nothing\n  watch  log only; feeds report and replay\n  nudge  notes, trim, constraints, ledger; destructive calls to the prompt (default)\n  ask    nudge + duplicates denied + Jev on writes; risky calls to the prompt\n  auto   unattended: risky calls denied with a reason, aggressive trim and collapse\n  ultra  auto + token-first trim, Jev on reads, model routing (AI SDK)`); process.exitCode = 1; return; }
+    if (!name || !LEVELS.includes(name)) { console.log(`usage: reflex level <${LEVELS.join('|')}> [--global]\n  off    hooks installed, do nothing\n  watch  log only; feeds report and replay\n  ask    Jev judges destructive commands and edits against your task; you get a prompt only when it matters (default)\n  auto   unattended: what would prompt is denied with a reason instead\n  ultra  auto + Jev on reads, token-first trim, model routing (AI SDK)`); process.exitCode = 1; return; }
     const path = argv.includes('--global') ? join(reflexHome(), 'config.json') : join(process.cwd(), 'reflex.config.json');
     let cur: Record<string, unknown> = {};
     try { cur = JSON.parse(readFileSync(path, 'utf8')); } catch { /* new */ }
@@ -252,7 +265,7 @@ async function main(argv: string[]): Promise<void> {
     console.log(`stored ${name} in ${writeSecret(name, value)}`);
     return;
   }
-  console.log('usage: reflex init [--global] [--codex|--all] [--no-report] | level <off|watch|nudge|ask|auto|ultra> | key <jev|llm> <api-key> | replay [--last N] [--provider none|laya|jev|llm] [--import] [file.jsonl ...] | report [--days 30] | stats | watch | doctor | clean [--older-than 30d] | serve [--provider laya] [--idle MIN]');
+  console.log('usage: reflex init [--global] [--codex|--all] [--no-report] | level <off|watch|ask|auto|ultra> | key <jev|llm> <api-key> | replay [--last N] [--provider none|laya|jev|llm] [--import] [file.jsonl ...] | report [--days 30] | stats | watch | doctor | clean [--older-than 30d] | serve [--provider laya] [--idle MIN]');
   process.exitCode = 1;
 }
 

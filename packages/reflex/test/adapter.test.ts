@@ -15,7 +15,8 @@ beforeEach(() => {
 const base = (over: object): HookInput => ({ session_id: 's1', cwd, transcript_path: transcript, ...over } as HookInput);
 
 describe('claude-code adapter', () => {
-  it('nudges a duplicate read by default and denies in enforce', async () => {
+  it('nudges a duplicate read in nudge mode and denies in enforce', async () => {
+    writeFileSync(join(cwd, 'reflex.config.json'), JSON.stringify({ mode: 'nudge', provider: 'none' }));
     const read = (id: string) => base({ hook_event_name: 'PreToolUse', tool_use_id: id, tool_name: 'Read', tool_input: { file_path: 'a.ts' } });
     expect(await handleHook(read('t1'))).toBeUndefined();
     await handleHook(base({ hook_event_name: 'PostToolUse', tool_use_id: 't1', tool_name: 'Read', tool_input: { file_path: 'a.ts' }, tool_response: 'x' }));
@@ -30,6 +31,7 @@ describe('claude-code adapter', () => {
   });
 
   it('asks on a force push even in nudge mode and records the permission event', async () => {
+    writeFileSync(join(cwd, 'reflex.config.json'), JSON.stringify({ mode: 'nudge', provider: 'none' }));
     const out = await handleHook(base({ hook_event_name: 'PreToolUse', tool_use_id: 'p1', tool_name: 'Bash', tool_input: { command: 'git push --force' } }));
     expect(out?.hookSpecificOutput).toMatchObject({ permissionDecision: 'ask' });
     expect(await handleHook(base({ hook_event_name: 'PermissionRequest', tool_use_id: 'p1', tool_name: 'Bash', tool_input: { command: 'git push --force' } }))).toBeUndefined();
@@ -38,6 +40,7 @@ describe('claude-code adapter', () => {
   });
 
   it('trims a large duplicate result in the original shape', async () => {
+    writeFileSync(join(cwd, 'reflex.config.json'), JSON.stringify({ provider: 'none' }));
     const big = 'line\n'.repeat(1000);
     for (const id of ['r1', 'r2']) {
       await handleHook(base({ hook_event_name: 'PreToolUse', tool_use_id: id, tool_name: 'Bash', tool_input: { command: `cat ${id}.log` } }));
@@ -56,6 +59,7 @@ describe('claude-code adapter', () => {
 
 describe('UserPromptSubmit', () => {
   it('restates constraints from the goal on every prompt', async () => {
+    writeFileSync(join(cwd, 'reflex.config.json'), JSON.stringify({ provider: 'none' }));
     await handleHook(base({ hook_event_name: 'PreToolUse', tool_use_id: 'u1', tool_name: 'Read', tool_input: { file_path: 'a.ts' } }));
     const out = await handleHook(base({ hook_event_name: 'UserPromptSubmit', prompt: 'now also never delete migrations' }));
     expect(out?.hookSpecificOutput?.['additionalContext']).toContain('Do not touch auth');
@@ -65,6 +69,7 @@ describe('UserPromptSubmit', () => {
 
 describe('SessionStart ledger', () => {
   it('injects the ledger after compaction but not on a fresh start', async () => {
+    writeFileSync(join(cwd, 'reflex.config.json'), JSON.stringify({ provider: 'none' }));
     const c = base({ hook_event_name: 'PreToolUse', tool_use_id: 'l1', tool_name: 'Read', tool_input: { file_path: 'a.ts' } });
     await handleHook(c);
     await handleHook(base({ hook_event_name: 'PostToolUse', tool_use_id: 'l1', tool_name: 'Read', tool_input: { file_path: 'a.ts' }, tool_response: 'export const thing = 1;' }));
@@ -77,13 +82,14 @@ describe('SessionStart ledger', () => {
 
 describe('codex host', () => {
   it('takes the goal from the first prompt, turns ask into a note in nudge and a deny in enforce, and never rewrites results', async () => {
+    writeFileSync(join(cwd, 'reflex.config.json'), JSON.stringify({ mode: 'nudge', provider: 'none' }));
     const codex = (over: object): HookInput => ({ session_id: 'cx1', cwd, ...over } as HookInput);
     expect(await handleHook(codex({ hook_event_name: 'UserPromptSubmit', prompt: 'Fix the redirect. Do not touch billing code.' }), 'codex')).toMatchObject({ hookSpecificOutput: { additionalContext: expect.stringContaining('Do not touch billing code') } });
     const push = codex({ hook_event_name: 'PreToolUse', tool_use_id: 'x1', tool_name: 'Bash', tool_input: { command: 'git push --force' } });
     const nudge = await handleHook(push, 'codex');
     expect(nudge?.hookSpecificOutput?.['permissionDecision']).toBeUndefined();
     expect(nudge?.hookSpecificOutput?.['additionalContext']).toContain('Confirm with the user');
-    writeFileSync(join(cwd, 'reflex.config.json'), JSON.stringify({ mode: 'enforce' }));
+    writeFileSync(join(cwd, 'reflex.config.json'), JSON.stringify({ mode: 'enforce', provider: 'none' }));
     expect((await handleHook(push, 'codex'))?.hookSpecificOutput).toMatchObject({ permissionDecision: 'deny' });
     const big = 'line\n'.repeat(1000);
     for (const id of ['p1', 'p2']) await handleHook(codex({ hook_event_name: 'PreToolUse', tool_use_id: id, tool_name: 'Bash', tool_input: { command: `cat ${id}.log` } }), 'codex');
@@ -101,6 +107,7 @@ describe('codex host', () => {
 
 describe('PreCompact', () => {
   it('resets the gauge window at compaction', async () => {
+    writeFileSync(join(cwd, 'reflex.config.json'), JSON.stringify({ provider: 'none' }));
     for (let i = 0; i < 3; i++) {
       await handleHook(base({ hook_event_name: 'PreToolUse', tool_use_id: `k${i}`, tool_name: 'Read', tool_input: { file_path: `f${i}.txt` } }));
       await handleHook(base({ hook_event_name: 'PostToolUse', tool_use_id: `k${i}`, tool_name: 'Read', tool_input: { file_path: `f${i}.txt` }, tool_response: `token_${i} ` + 'x'.repeat(3000) }));
@@ -155,6 +162,9 @@ describe('transcript containment', () => {
 describe('level off and level file loading', () => {
   it('level off makes the hook a no-op and level ask enforces', async () => {
     const { loadConfig } = await import('../src/config-file.js');
+    expect(loadConfig(mkdtempSync(join(tmpdir(), 'empty-')))).toMatchObject({ level: 'ask', mode: 'enforce', provider: 'jev' });
+    writeFileSync(join(cwd, 'reflex.config.json'), JSON.stringify({ level: 'nudge' }));
+    expect(loadConfig(cwd)).toMatchObject({ level: 'ask', mode: 'nudge', provider: 'none' });
     writeFileSync(join(cwd, 'reflex.config.json'), JSON.stringify({ level: 'off' }));
     expect(loadConfig(cwd)).toMatchObject({ level: 'off', mode: 'shadow' });
     const read = base({ hook_event_name: 'PreToolUse', tool_use_id: 'o1', tool_name: 'Bash', tool_input: { command: 'git push --force' } });

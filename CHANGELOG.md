@@ -8,6 +8,7 @@
 - Providers: `none` (default), `jev` (hosted, 429 retry), `laya` (local, via `reflex serve` over a Unix socket), `llm` (Claude Haiku 4.5 baseline).
 - CLI: `init [--global]`, `replay`, `stats`, `watch`, `doctor`, `clean`, `serve`.
 - Benchmark routing arm: Sonnet 5 $1.75 → $0.28 with Jev routing, same outcome.
+- Default level is `ask` with Jev; `init` asks for the key; `nudge` retired as a level (still a mode); README led by what Jev decides.
 - Destructive-pattern hits judged in context by Jev at ask/auto/ultra (requested/needed proceed with a note; unrelated/forbidden prompt); model calls on reads only in ultra.
 - Levels (`off | watch | nudge | ask | auto | ultra`) as presets over the config, `reflex level`; unattended levels deny risky calls instead of asking; Jev per-step model routing in the AI SDK adapter.
 - Codex CLI host (`reflex-hook --codex`, `reflex init --codex|--all`), prompt-derived goals independent of host transcripts, `apply_patch` classification, install skill and agent install prompt.

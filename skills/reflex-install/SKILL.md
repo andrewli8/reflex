@@ -28,7 +28,7 @@ Reflex is a hook layer that advises the agent's own permission system: it nudges
    ```bash
    reflex doctor
    ```
-   It prints the config mode (default `nudge`), provider (default `none`, no model needed), and hook state.
+   It prints the level (default `ask`), provider (default `jev`), whether a Jev key is present, and hook state. Without a key it says LIMITED: candidates are found but not judged.
 
 4. Show the user what Reflex would have done on their past sessions before changing any mode:
    ```bash
@@ -36,12 +36,7 @@ Reflex is a hook layer that advises the agent's own permission system: it nudges
    reflex report
    ```
 
-5. Optional decision model. Only if the user has a key:
-   ```json
-   // reflex.config.json in the project root
-   { "mode": "nudge", "provider": "jev" }
-   ```
-   with `TYPESAFE_API_KEY` exported. Do not enable `enforce` until the user has reviewed a report.
+5. Jev key. `init` asks for it; if skipped, store it later with `reflex key jev <key>`. The key comes from TypeSafe (typesafe.ai). Do not switch the level to `auto` or `ultra` unless the user asks.
 
 ## Verify
 
@@ -49,6 +44,6 @@ Ask the model to read the same file twice; the second read should carry a `[refl
 
 ## Do not
 
-- Do not edit `reflex.config.json` to `enforce` without the user asking.
+- Do not change the level to `auto` or `ultra` without the user asking.
 - Do not add `neverIntervene` entries to silence destructive-pattern asks; they are never silenced by design.
 - Do not describe Reflex as a security boundary.

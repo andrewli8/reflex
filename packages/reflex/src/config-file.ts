@@ -10,6 +10,7 @@ function pick(raw: unknown): Partial<ReflexConfig> {
   const r = raw as Record<string, unknown>;
   const out: Partial<ReflexConfig> = {};
   if (typeof r['level'] === 'string' && (LEVELS as string[]).includes(r['level'])) out.level = r['level'] as Level;
+  else if (r['level'] === 'nudge') { out.level = 'ask'; out.mode = 'nudge'; out.provider = 'none'; } // retired level, kept readable
   if (typeof r['mode'] === 'string' && MODES.has(r['mode'])) out.mode = r['mode'] as ReflexConfig['mode'];
   if (typeof r['askBecomesDeny'] === 'boolean') out.askBecomesDeny = r['askBecomesDeny'];
   if (typeof r['judgePatterns'] === 'boolean') out.judgePatterns = r['judgePatterns'];

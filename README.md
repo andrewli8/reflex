@@ -1,24 +1,22 @@
 # Reflex
 
-Fast reflexes for coding agents. It watches every tool call, stops the dumb ones, and forgets what the agent no longer needs.
+Judgment for coding agents, in 200 ms. Reflex asks Jev, a small typed decision model, three questions your agent's permission system cannot answer: does this destructive command belong to the task, does this edit break a constraint I stated, and does the next step need the big model.
 
-Works with Claude Code and Codex. One install, no model required.
+Works with Claude Code, Codex and the Vercel AI SDK.
 
-## Before / after
+## What Jev decides
 
-Your agent reads `auth.ts`. Then it reads `auth.ts` again. Then it runs the test suite and pastes 30 KB of output into its own context, where every later step pays to re-read it. Twenty minutes in, it forgets you said "do not change authentication providers" and starts a migration. Somewhere in there it runs a setup script that force-pushes.
-
-With Reflex:
+Your permission rules match command strings. They cannot know that a force push is fine on "squash and push my branch" and wrong on "fix the typo, do not rewrite history", or that editing `auth0.config.ts` violates "do not change authentication providers". Reflex hands Jev the task, the constraints, the last few actions and the proposed call, and acts on the answer.
 
 ```text
-Read auth.ts                       ok
-Read auth.ts                       [reflex] identical call already made at step 1
-Bash npm test                      [reflex] trimmed 2,400 lines, 3 error lines kept, full output archived
-Bash ./sync.sh                     [reflex] ask: git reset --hard (inside ./sync.sh)
-Edit auth0.config.ts               [reflex] conflicts with a constraint: do not change authentication providers
+Bash git push --force origin feature   task: squash and force push it        [reflex] the task asks for it (1.00), proceeding
+Bash git push --force origin main      task: fix the typo, do not rewrite     [reflex] ask: forbidden by the task (1.00)
+Bash ./sync.sh                         script hides git reset --hard          [reflex] ask: unrelated to the task (0.90)
+Edit auth0.config.ts → Clerk           constraint: do not change providers    [reflex] ask: conflicts with a constraint (0.99)
+Edit auth.ts "/hom" → "/home"                                                 [reflex] in scope (0.20), proceeding
 ```
 
-The agent's own permission prompt still decides. Reflex only advises it.
+Every line above came from the shipped hook, not a demo script. The agent's own permission prompt still decides; Reflex only tells it when to appear.
 
 ## Numbers
 
@@ -26,10 +24,12 @@ Measured, not estimated. Details and the scripts are in `docs/PLAN.md`.
 
 | what | result |
 |---|---|
-| 39-step agent task, Haiku 4.5, with and without Reflex collapse | 716,862 input tokens became 266,982 (63% fewer), same outcome, 14 s faster |
-| 20 real Claude Code sessions, replayed | 6 destructive commands sent to the prompt, 0 false vetoes, 25% of tool output never used again |
-| planted trap: script that force-pushes, task says do not rewrite history | agent ran it; Reflex read the script and stopped it (`docs/evidence/`) |
-| same task on Sonnet 5, `level: ultra` with Jev routing routine steps to Haiku | $1.75 became $0.28 (84% cheaper), same outcome; 38 of 39 steps routed down |
+| destructive commands judged against the task (four contexts, Jev) | requested 0.75, needed 0.70, unrelated 0.97, forbidden 0.99: all four correct |
+| constraint-violating edit vs in-scope edit, through the real hook | 0.99 asked, 0.20 allowed |
+| planted trap: script that force-pushes, task says do not rewrite history | agent ran it; Reflex stopped it (`docs/evidence/`) |
+| 39-step task on Sonnet 5, `ultra`: Jev routes routine steps to Haiku | $1.75 became $0.28, same outcome |
+| same task, collapse of unreferenced results | 716,862 input tokens became 266,982 |
+| Jev cost | about $0.02 per 1,000 tool calls |
 
 ## See it
 
@@ -37,11 +37,9 @@ Measured, not estimated. Details and the scripts are in `docs/PLAN.md`.
 
 ## How it works
 
-Reflex is a hook. Before a tool call it classifies the call, checks it against what already happened, and returns one of: let it through, add a note, skip it, or ask you. After the call it decides whether the output deserves the context it will occupy.
+Reflex is a hook that runs before and after every tool call. Cheap checks find candidates: a destructive command, including one hidden inside a script the agent invokes; a write; an oversized result. Jev judges the candidate against your task in one round trip of 130 to 500 ms, and a fixed policy turns the score into allow, note, ask or deny. If Jev is slow or unreachable, the call proceeds after 1.5 s. Your permission system remains the boundary.
 
-Most of that is deterministic: hashes, cycle detection, a list of destructive patterns, a look inside any local script the agent runs. The parts that need judgment (is this edit against the user's constraint?) can go to a decision model, if you turn one on.
-
-Two things happen every turn without a model. Your task's constraints are restated so they never scroll out of attention. After a compaction, the agent gets a ledger of what it already read, edited, ran and verified, so it does not start over.
+Also, without a model: your constraints are restated every turn so they never scroll out of attention, the agent gets a ledger of what it already read, edited and verified after each compaction, repeated reads and polling loops are pointed out, and oversized output is trimmed with error lines kept. Useful, but not the reason to install.
 
 ## Install
 
@@ -69,7 +67,7 @@ reflex init --all
 reflex init --all --global
 ```
 
-`init` finishes by replaying your last 20 sessions and printing what it would have caught. Codex asks you to approve the new hook the first time you open it in that project.
+`init` asks for your Jev key (TypeSafe, typesafe.ai), then replays your last 20 sessions and prints what it would have caught. Without a key Reflex runs limited: candidates are found but not judged, and `doctor` says so. Codex asks you to approve the new hook the first time you open it in that project.
 
 Prefer to let the agent do it? Paste `INSTALL-PROMPT.md` into any coding agent, or drop `skills/reflex-install` into `.claude/skills`.
 
@@ -90,33 +88,30 @@ Prefer to let the agent do it? Paste `INSTALL-PROMPT.md` into any coding agent, 
 
 One knob. `reflex level <name>` writes it to `reflex.config.json` (`--global` for `~/.reflex/config.json`).
 
-| level | what Reflex does | risky calls | model |
-|---|---|---|---|
-| `off` | nothing; hooks stay installed | agent decides | none |
-| `watch` | logs only, so `report` and `replay` work | agent decides | none |
-| `nudge` (default) | notes on duplicates and loops, trim, constraints restated, ledger after compaction | your permission prompt | none |
-| `ask` | `nudge` plus duplicates denied and Jev judging every write against your constraints. Destructive commands prompt only when the task did not call for them | your permission prompt, when it matters | Jev |
-| `auto` | unattended: risky calls are denied with a reason so the agent routes around them; aggressive trim and collapse | denied | Jev |
-| `ultra` | `auto` plus token-first trim, Jev on reads, and per-step model routing on the AI SDK | denied | Jev |
+| level | what Reflex does | risky calls |
+|---|---|---|
+| `off` | nothing; hooks stay installed | agent decides |
+| `watch` | logs only, so `report` and `replay` work | agent decides |
+| `ask` (default) | Jev judges destructive commands and edits against your task; you get a prompt only when the task did not call for it | your prompt, when it matters |
+| `auto` | unattended: what would have prompted is denied with a reason, so the agent routes around it | denied |
+| `ultra` | `auto` plus Jev on reads, token-first trim, and per-step model routing on the AI SDK | denied |
 
-At `ask` and above, a destructive command is a candidate, not a verdict: Jev answers whether the task asked for it, needs it, does not need it, or forbids it. Measured on Jev: 0.75 / 0.70 / 0.97 / 0.99 on the four cases. Asked-for and needed proceed with a note; the other two go to your prompt. Without a model, every destructive command prompts.
-
-Start at `nudge`. Move to `ask` once `reflex report` looks right on your history. Use `auto` or `ultra` for CI and overnight runs, where a prompt would hang forever. Any key in the config file still overrides its level's preset.
+Use `auto` or `ultra` for CI and overnight runs, where a prompt would hang forever. Any key in the config file still overrides its level's preset; `mode: "nudge"` is still available for note-only behaviour.
 
 A denied call can be re-issued with `reflex:force` in its description. Reflex stops nudging a pattern once you override it. At most two interventions per five steps.
 
 ## Decision models
 
-Optional. Without one, everything above still works.
+Jev is the default. The others exist for comparison and for people who cannot use a hosted model.
 
 | provider | what | needs |
 |---|---|---|
-| `none` | deterministic checks only | nothing |
-| `jev` | TypeSafe's hosted decision model, 130 to 500 ms | `reflex key jev <key>` |
+| `jev` (default) | TypeSafe's hosted decision model, 130 to 500 ms, about $0.02 per 1,000 calls | `reflex key jev <key>` |
+| `none` | candidates only, no judgment | nothing |
 | `laya` | open-source local model, 290 ms per question on a laptop | 1.7 GB download, runs in a small daemon |
 | `llm` | Claude Haiku answering the same questions | `ANTHROPIC_API_KEY` |
 
-What a model adds today: it scores whether a mutating call conflicts with your stated constraints (a constraint-violating edit scored 0.99 against 0.09 for an in-scope one). What it does not add: predicting which reads will turn out useless. We measured that at coin-flip quality and say so.
+What Jev is not asked outside `ultra`: whether a read will turn out useful. We measured that at coin-flip quality on 420 labelled reads and say so.
 
 ## AI SDK
 

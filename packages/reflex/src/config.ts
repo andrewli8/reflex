@@ -1,6 +1,6 @@
 export type Mode = 'shadow' | 'nudge' | 'enforce';
-export type Level = 'off' | 'watch' | 'nudge' | 'ask' | 'auto' | 'ultra';
-export const LEVELS: Level[] = ['off', 'watch', 'nudge', 'ask', 'auto', 'ultra'];
+export type Level = 'off' | 'watch' | 'ask' | 'auto' | 'ultra';
+export const LEVELS: Level[] = ['off', 'watch', 'ask', 'auto', 'ultra'];
 
 export interface ReflexConfig {
   /** One knob that sets the rest. Explicit keys in the config file still override the preset. */
@@ -44,8 +44,9 @@ export interface ReflexConfig {
 }
 
 export const defaultConfig: ReflexConfig = {
-  level: 'nudge',
-  mode: 'nudge',
+  level: 'ask',
+  mode: 'enforce',
+  provider: 'jev',
   askBecomesDeny: false,
   judgePatterns: false,
   modelOnReads: false,
@@ -76,7 +77,6 @@ export const defaultConfig: ReflexConfig = {
 export const LEVEL_PRESETS: Record<Level, Partial<ReflexConfig>> = {
   off:   { mode: 'shadow', provider: 'none', trim: { ...defaultConfig.trim, enabled: false }, gauge: { ...defaultConfig.gauge, enabled: false }, ledger: { enabled: false } },
   watch: { mode: 'shadow', provider: 'none', trim: { ...defaultConfig.trim, enabled: false } },
-  nudge: { mode: 'nudge', provider: 'none' },
   ask:   { mode: 'enforce', provider: 'jev', judgePatterns: true },
   auto:  { mode: 'enforce', provider: 'jev', askBecomesDeny: true, judgePatterns: true, trim: { ...defaultConfig.trim, minBytes: 1200 }, collapse: { after: 3, checkpointEvery: 5 } },
   ultra: { mode: 'enforce', provider: 'jev', askBecomesDeny: true, judgePatterns: true, modelOnReads: true, trim: { ...defaultConfig.trim, minBytes: 600, execMinBytes: 400 }, collapse: { after: 3, checkpointEvery: 5 }, routing: { enabled: true }, maxInterventionsPer5Steps: 4 },
