@@ -127,7 +127,7 @@ h0.innerHTML = h0.innerHTML.replace(/(<i>|<\/i>)/g, m => m).split(/(\s+|<i>|<\/i
 const A = [981,1289,2302,3298,4294,5290,6286,7282,8278,9274,10270,11266,12262,13258,14254,15250,16246,17242,18238,19234,20230,21226,22222,23218,24214,25210,26206,27202,28198,29194,30190,31186,31848,31995,32129,32246,32331,32331,32331];
 const B = [981,1288,2309,3353,4350,5346,6342,7338,8334,9330,6249,7245,8241,9237,10233,6254,7251,8248,9245,10242,6849,7845,8841,9837,10833,7000,7996,8992,9988,10984,8891,9027,5716,5848,5962,5962,5962,5962,5962];
 const stA = document.getElementById('stA'), stB = document.getElementById('stB');
-for (let i = 0; i < 39; i++) { const a = document.createElement('i'); a.style.height = '5px'; stA.appendChild(a); const b = document.createElement('i'); b.style.height = '5px'; if (i >= 10 && i % 5 === 0) b.className = 'thin'; // the collapse steps: input drops back down stB.appendChild(b); }
+for (let i = 0; i < 39; i++) { const a = document.createElement('i'); a.style.height = '5px'; stA.appendChild(a); const b = document.createElement('i'); b.style.height = '5px'; if (i >= 10 && i % 5 === 0) b.className = 'thin'; /* collapse steps: input drops back down */ stB.appendChild(b); }
 const sum = xs => xs.reduce((a, b) => a + b, 0);
 const fmt = n => Math.round(n).toLocaleString('en-US');
 document.getElementById('pct').textContent = `−${Math.round(100 * (1 - sum(B) / sum(A)))}%`;
