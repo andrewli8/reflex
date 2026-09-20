@@ -1,0 +1,5 @@
+node_modules/
+dist/
+packages/bench/results/
+.reflex/
+.claude/settings.local.json
