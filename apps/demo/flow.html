@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Reflex flow</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,600;9..144,800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;background:#0a0b0d;height:100%;overflow:hidden}
+canvas{display:block;width:100vw;height:100vh}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+// A self-running "factory" of one agent session, played twice: the top lane without Reflex, the bottom lane with it.
+// Packets are tool calls. They leave the agent, pass the gate, run at the tool, and their result lands in the context tank.
+// Everything the tank holds is re-read on every later step, so the tank is the bill.
+const C = document.getElementById('c'), X = C.getContext('2d');
+const COL = { bg:'#0a0b0d', ink:'#e9e6df', dim:'#7d8390', line:'#1d2026', base:'#5aa9ff', rx:'#ffb02e', red:'#ff5d5d', green:'#5dd39e', panel:'#101216' };
+let W = 1920, H = 1080, DPR = 1;
+function resize(){ DPR = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight; C.width = W * DPR; C.height = H * DPR; X.setTransform(DPR,0,0,DPR,0,0); }
+addEventListener('resize', resize); resize();
+
+// Script of one session. kind: read | edit | bash. flags: dup (repeat read), big (huge output), danger (destructive), loop (polling)
+const SCRIPT = [];
+const docs = 14;
+SCRIPT.push({ kind:'bash', label:'list docs/', bytes:600 });
+for (let i = 1; i <= docs; i++) SCRIPT.push({ kind:'read', label:`read docs/module${i}.md`, bytes:2500 });
+SCRIPT.push({ kind:'read', label:'read docs/module3.md', bytes:2500, dup:true });
+SCRIPT.push({ kind:'read', label:'read docs/module7.md', bytes:2500, dup:true });
+SCRIPT.push({ kind:'edit', label:'write docs/INDEX.md', bytes:300 });
+SCRIPT.push({ kind:'bash', label:'npm test', bytes:31000, big:true });
+SCRIPT.push({ kind:'read', label:'read src/auth.ts', bytes:400 });
+SCRIPT.push({ kind:'bash', label:'./sync.sh', bytes:200, danger:'git reset --hard inside ./sync.sh' });
+SCRIPT.push({ kind:'edit', label:'write src/auth.ts', bytes:300 });
+SCRIPT.push({ kind:'bash', label:'pgrep -f worker', bytes:120, loop:1 });
+SCRIPT.push({ kind:'bash', label:'pgrep -f worker', bytes:120, loop:2 });
+SCRIPT.push({ kind:'bash', label:'pgrep -f worker', bytes:120, loop:3 });
+SCRIPT.push({ kind:'bash', label:'grep -n hom src/auth.ts', bytes:150 });
+SCRIPT.push({ kind:'read', label:'read src/routes.ts', bytes:500 });
+SCRIPT.push({ kind:'bash', label:'git push --force origin main', bytes:200, danger:'git push --force' });
+SCRIPT.push({ kind:'bash', label:'npm test', bytes:31000, big:true });
+
+const TOK = b => Math.round(b / 4);
+const STEP_MS = 1100;           // one tool call per lane per STEP_MS
+const CHECKPOINT = 5;           // reflex collapses unreferenced results every N steps
+const KEEP_RECENT = 3;
+
+function makeLane(rx, y) {
+  return { rx, y, i:0, t0:0, packets:[], tank:[], tankTok:0, read:0, skipped:0, asked:0, trimmed:0, collapsed:0, note:'', noteT:0, done:false };
+}
+const lanes = [ makeLane(false, 0), makeLane(true, 0) ];
+let start = performance.now(), last = start;
+
+function layout(){
+  const top = 150, gap = 26, laneH = (H - top - 70 - gap) / 2;
+  lanes[0].y = top; lanes[1].y = top + laneH + gap; lanes[0].h = lanes[1].h = laneH;
+}
+function nodes(l){
+  const x0 = 40, x1 = W - 40, w = x1 - x0;
+  return { agent:{x:x0+w*0.06}, gate:{x:x0+w*0.34}, tool:{x:x0+w*0.56}, tank:{x:x0+w*0.76, w:w*0.24-8}, y:l.y + l.h*0.52 };
+}
+
+function step(l, now){
+  if (l.i >= SCRIPT.length) { l.done = true; return; }
+  const ev = SCRIPT[l.i]; const n = nodes(l);
+  const p = { ev, born:now, x:n.agent.x, phase:'to-gate', size:Math.min(28, 8 + Math.sqrt(ev.bytes)/6), color: ev.kind==='read'?COL.base: ev.kind==='edit'?COL.green:'#c9c9c9', outcome:'pass' };
+  if (l.rx) {
+    if (ev.dup) { p.outcome = 'skip'; }
+    else if (ev.danger) { p.outcome = 'ask'; }
+    else if (ev.loop === 3) { p.outcome = 'warn'; }
+    else if (ev.big) { p.outcome = 'trim'; }
+  }
+  l.packets.push(p);
+  l.i++;
+  // the bill: every step re-reads the whole tank
+  l.read += l.tankTok;
+  if (l.rx && l.i % CHECKPOINT === 0) {
+    let c = 0, freed = 0;
+    l.tank.forEach((r, k) => { if (!r.collapsed && k < l.tank.length - KEEP_RECENT && !r.keep) { freed += r.tok - 12; r.tok = 12; r.collapsed = true; c++; } });
+    if (c) { l.tankTok -= freed; l.collapsed += c; l.note = `checkpoint: ${c} unreferenced results collapsed`; l.noteT = now; }
+  }
+}
+
+function landResult(l, p, now){
+  const ev = p.ev;
+  let tok = TOK(ev.bytes);
+  if (p.outcome === 'trim') { tok = TOK(2000); l.trimmed++; l.note = `trimmed ${ev.label}: ${TOK(ev.bytes).toLocaleString()} → ${tok.toLocaleString()} tokens, error lines kept`; l.noteT = now; }
+  l.tank.push({ tok, kind:ev.kind, keep: ev.kind==='edit' });
+  l.tankTok += tok;
+}
+
+function update(now){
+  const dt = now - last; last = now;
+  layout();
+  for (const l of lanes) {
+    if (!l.done && now - l.t0 > STEP_MS) { l.t0 = now; step(l, now); }
+    const n = nodes(l); const speed = (n.gate.x - n.agent.x) / 700; // px per ms
+    for (const p of l.packets) {
+      if (p.phase === 'to-gate') { p.x += speed * dt; if (p.x >= n.gate.x) { p.x = n.gate.x; p.phase = l.rx && p.outcome !== 'pass' ? 'gate' : 'to-tool'; p.gateT = now;
+          if (l.rx && p.outcome === 'skip') { l.skipped++; l.note = `skipped ${p.ev.label}: identical call already made`; l.noteT = now; }
+          if (l.rx && p.outcome === 'ask') { l.asked++; l.note = `ask: ${p.ev.danger}`; l.noteT = now; }
+          if (l.rx && p.outcome === 'warn') { l.note = `same command, identical output 3 times: wait longer or change approach`; l.noteT = now; } } }
+      else if (p.phase === 'gate') { if (now - p.gateT > 650) { if (p.outcome === 'skip' || p.outcome === 'ask') { p.phase = 'bin'; p.binT = now; } else { p.phase = 'to-tool'; } } }
+      else if (p.phase === 'to-tool') { p.x += speed * dt; if (p.x >= n.tool.x) { p.x = n.tool.x; p.phase = 'run'; p.runT = now; } }
+      else if (p.phase === 'run') { if (now - p.runT > 250) { p.phase = 'to-tank'; if (p.outcome === 'trim') p.size = 12; } }
+      else if (p.phase === 'to-tank') { p.x += speed * dt; if (p.x >= n.tank.x) { p.phase = 'landed'; landResult(l, p, now); } }
+      else if (p.phase === 'bin') { p.y = (p.y ?? 0) + dt * 0.35; if (p.y > 80) p.phase = 'gone'; }
+    }
+    l.packets = l.packets.filter(p => p.phase !== 'landed' && p.phase !== 'gone');
+  }
+  if (lanes.every(l => l.done && l.packets.length === 0) && now - lanes[1].t0 > 4000) { for (const l of lanes) Object.assign(l, makeLane(l.rx, l.y)); }
+}
+
+function text(s, x, y, o={}){ X.font = `${o.w||500} ${o.s||14}px ${o.f||'"IBM Plex Mono"'}`; X.fillStyle = o.c||COL.ink; X.textAlign = o.a||'left'; X.textBaseline = o.b||'alphabetic'; X.fillText(s, x, y); }
+function rr(x,y,w,h,r,fill,stroke){ X.beginPath(); X.roundRect(x,y,w,h,r); if (fill){X.fillStyle=fill;X.fill();} if (stroke){X.strokeStyle=stroke;X.lineWidth=1;X.stroke();} }
+
+function drawLane(l){
+  const n = nodes(l), acc = l.rx ? COL.rx : COL.base, y = n.y;
+  rr(24, l.y, W-48, l.h, 14, COL.panel, COL.line);
+  text(l.rx ? 'WITH REFLEX' : 'WITHOUT REFLEX', 44, l.y+34, { s:13, c:acc, w:600 });
+  text(l.rx ? 'same agent, same task, hooks on' : 'agent alone', 44, l.y+54, { s:12, c:COL.dim });
+  // conveyor
+  X.strokeStyle = COL.line; X.lineWidth = 6; X.beginPath(); X.moveTo(n.agent.x, y); X.lineTo(n.tank.x, y); X.stroke();
+  const dash = ((performance.now()/12) % 24); X.setLineDash([12,12]); X.lineDashOffset = -dash; X.strokeStyle = '#2a2e36'; X.lineWidth = 2; X.beginPath(); X.moveTo(n.agent.x, y); X.lineTo(n.tank.x, y); X.stroke(); X.setLineDash([]);
+  // nodes
+  const node = (x, label, sub, c) => { rr(x-46, y-30, 92, 60, 10, '#0c0e12', c); text(label, x, y-4, { s:12, a:'center', w:600, c }); if (sub) text(sub, x, y+14, { s:10, a:'center', c:COL.dim }); };
+  node(n.agent.x, 'AGENT', 'proposes call', COL.ink);
+  if (l.rx) { node(n.gate.x, 'REFLEX', 'classify · dedupe · inspect', COL.rx); } else { X.strokeStyle = COL.line; X.beginPath(); X.moveTo(n.gate.x, y-30); X.lineTo(n.gate.x, y+30); X.stroke(); text('no gate', n.gate.x, y+48, { s:10, a:'center', c:COL.dim }); }
+  node(n.tool.x, 'TOOL', 'runs · returns output', COL.ink);
+  // tank
+  const tw = n.tank.w, th = l.h*0.62, tx = n.tank.x, ty = y - th/2;
+  rr(tx, ty, tw, th, 10, '#0c0e12', acc);
+  const maxTok = 36000; let fillH = Math.min(1, l.tankTok / maxTok) * (th-4);
+  // draw results as stacked bars
+  let cy = ty + th - 2;
+  for (const r of l.tank) { const h = Math.max(2, (r.tok / maxTok) * (th-4)); cy -= h; X.fillStyle = r.collapsed ? '#3a3f4a' : r.kind==='read' ? COL.base : r.kind==='edit' ? COL.green : '#9aa0aa'; X.globalAlpha = r.collapsed ? .8 : .85; X.fillRect(tx+2, cy, tw-4, h-1); X.globalAlpha = 1; }
+  text('CONTEXT', tx+10, ty-10, { s:11, c:acc, w:600 });
+  text(`${l.tankTok.toLocaleString()} tokens live`, tx+tw-10, ty-10, { s:11, c:COL.dim, a:'right' });
+  if (l.tankTok > maxTok*0.85) { text('re-read every step', tx+tw/2, ty+th/2, { s:13, a:'center', c:COL.red, w:600 }); }
+  // packets
+  for (const p of l.packets) {
+    const px = p.x, py = p.phase === 'bin' ? y + 34 + (p.y||0) : y;
+    const atGate = p.phase === 'gate';
+    const c = p.phase==='gate' ? (p.outcome==='skip'?COL.dim: p.outcome==='ask'?COL.red: p.outcome==='warn'?COL.rx: COL.rx) : p.color;
+    X.fillStyle = c; X.globalAlpha = p.phase==='bin' ? Math.max(0, 1-(p.y||0)/80) : 1;
+    const gy = atGate ? py - 34 - p.size/2 : py;
+    X.beginPath(); X.roundRect(px - p.size/2, gy - p.size/2, p.size, p.size, 4); X.fill(); X.globalAlpha = 1;
+    if (p.phase !== 'bin') text(p.ev.label, px, atGate ? py - 62 : py - p.size/2 - 8, { s:11, a:'center', c: atGate ? c : COL.dim });
+    if (atGate) { const tag = p.outcome==='skip'?'SKIP · duplicate': p.outcome==='ask'?'ASK · destructive': p.outcome==='warn'?'WARN · polling loop':'TRIM · 31 KB output'; text(tag, px, py + 52, { s:12, a:'center', c, w:600 }); }
+  }
+  // counters
+  const cx = 44, cy0 = l.y + l.h - 22;
+  const k = (label, v, x, c) => { text(label, x, cy0-22, { s:10, c:COL.dim }); text(v, x, cy0, { s:22, f:'Fraunces', w:600, c: c||COL.ink }); };
+  k('TOKENS READ SO FAR', l.read.toLocaleString(), cx, acc);
+  k('STEPS', String(l.i), cx+260);
+  if (l.rx) { k('SKIPPED', String(l.skipped), cx+380); k('ASKED', String(l.asked), cx+500, l.asked?COL.red:COL.ink); k('TRIMMED', String(l.trimmed), cx+620); k('COLLAPSED', String(l.collapsed), cx+760); }
+  else { text('every result stays, every step re-reads all of it', cx+380, cy0-4, { s:12, c:COL.dim }); }
+  if (l.note && performance.now() - l.noteT < 2600) text(`[reflex] ${l.note}`, n.gate.x - 46, l.y + l.h - 60, { s:12, c:COL.rx });
+}
+
+function draw(now){
+  update(now);
+  X.fillStyle = COL.bg; X.fillRect(0,0,W,H);
+  text('Reflex', 40, 64, { s:44, f:'Fraunces', w:800 });
+  text('Fast reflexes for coding agents. Two identical sessions. Watch the context tank and the bill.', 40, 96, { s:14, c:COL.dim });
+  const b = lanes[0].read, r = lanes[1].read; const pct = b ? Math.round(100*(1 - r/b)) : 0;
+  text(`${pct > 0 ? '−' : ''}${Math.abs(pct)}% tokens read`, W-40, 76, { s:40, f:'Fraunces', w:800, a:'right', c:COL.rx });
+  text('live, this run', W-40, 100, { s:12, a:'right', c:COL.dim });
+  for (const l of lanes) drawLane(l);
+  text('Packets: tool calls. Tank: what the model re-reads on every step. Skips, asks and trims are the real rules Reflex ships; the task is the published benchmark shape.', 40, H-26, { s:11, c:COL.dim });
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>

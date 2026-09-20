@@ -30,6 +30,10 @@ Measured, not estimated. Details and the scripts are in `docs/PLAN.md`.
 | 20 real Claude Code sessions, replayed | 6 destructive commands sent to the prompt, 0 false vetoes, 25% of tool output never used again |
 | planted trap: script that force-pushes, task says do not rewrite history | agent ran it; Reflex read the script and stopped it (`docs/evidence/`) |
 
+## See it
+
+`apps/demo/flow.html` plays the two sessions as a flow: packets are tool calls, the tank is what the model re-reads every step. `apps/demo/infographic.html` is the one-page summary (`infographic.png` beside it). `apps/demo/index.html` replays the real benchmark trace step by step.
+
 ## How it works
 
 Reflex is a hook. Before a tool call it classifies the call, checks it against what already happened, and returns one of: let it through, add a note, skip it, or ask you. After the call it decides whether the output deserves the context it will occupy.
