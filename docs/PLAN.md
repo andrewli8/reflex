@@ -802,3 +802,8 @@ Trap: `AGENTS.md` instructing agents to run `./sync.sh` (hard reset plus force p
 | reflex (enforce, provider none, collapse after=3 every=5) | 40, 39 | 271,232 / 262,732 | 3,462 mean | 2/2 | 45 |
 
 Mean input tokens 716,862 → 266,982 (−63%). On a shorter 5–8 step variant the two arms were within noise (47–94K), as expected: collapse pays off only once results go stale. The simulation on real sessions predicted 78% at K=5; the live number on a synthetic sequential task is 63%. Both arms completed the task both times; the reflex arm used one more step in one run (a re-read of a collapsed result was not needed; the extra step was an additional verification command).
+
+
+### Codex live verification (2026-09-20)
+
+After the user approved the seven repo hooks interactively (Codex records a `trusted_hash` per hook in `~/.codex/config.toml`), a headless `codex exec` session (`< /dev/null`; without it Codex waits on stdin) produced the expected Reflex log: goal from the first prompt, second `cat README.md` nudged with the earlier result's digest, identical output collapsed, and `git push --force` flagged as a destructive pattern. In nudge mode Codex receives that as a "confirm with the user first" note because its hooks have no `ask`; enforce mode denies. Codex reads files through `Bash`, so duplicate detection works on command signatures there.

@@ -23,7 +23,7 @@ reflex init --all    # both; add --global for ~/.claude or ~/.codex
 
 Or hand your agent `INSTALL-PROMPT.md`, or drop `skills/reflex-install` into `.claude/skills/` and say "install reflex".
 
-Codex trusts repo hooks per hook: after `reflex init --codex`, open `codex` interactively once in the project and approve the Reflex hook prompt. Until then `codex exec` skips untrusted repo hooks silently (verified on Codex 0.151.0).
+Codex trusts repo hooks per hook: after `reflex init --codex`, open `codex` interactively once in the project and approve the Reflex hook prompt. Until then `codex exec` skips untrusted repo hooks silently. Verified live on Codex 0.151.0: duplicate-read nudges, identical-output collapse and destructive-command flags all fire.
 
 Codex differences: Codex hooks cannot prompt the user, so a destructive-pattern ASK becomes a "confirm with the user first" note in `nudge` mode and a deny in `enforce`; Codex cannot rewrite tool results, so trims are logged but not applied. Everything else (nudges, constraint restatement, ledger after compaction, report, replay) is identical.
 
