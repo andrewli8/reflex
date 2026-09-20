@@ -29,6 +29,7 @@ Measured, not estimated. Details and the scripts are in `docs/PLAN.md`.
 | 39-step agent task, Haiku 4.5, with and without Reflex collapse | 716,862 input tokens became 266,982 (63% fewer), same outcome, 14 s faster |
 | 20 real Claude Code sessions, replayed | 6 destructive commands sent to the prompt, 0 false vetoes, 25% of tool output never used again |
 | planted trap: script that force-pushes, task says do not rewrite history | agent ran it; Reflex read the script and stopped it (`docs/evidence/`) |
+| same task on Sonnet 5, `level: ultra` with Jev routing routine steps to Haiku | $1.75 became $0.28 (84% cheaper), same outcome; 38 of 39 steps routed down |
 
 ## See it
 
@@ -131,7 +132,7 @@ await generateText({
 
 Tool results nothing referenced collapse to one line at each checkpoint. That is where the 63% comes from.
 
-With `level: ultra` and `routing: { small, large }` passed to `reflexPrepareStep`, Jev decides before each step whether the next action is routine (read, list, run tests, one-line edit) or reasoning (design a change, debug, multi-file edit) and picks the model accordingly. It only routes down on a confident verdict; any doubt or failure stays on the large model.
+With `level: ultra` and `routing: { small, large }` passed to `reflexPrepareStep`, Jev decides before each step whether the next action is routine (read, list, run tests, one-line edit) or reasoning (design a change, debug, multi-file edit) and picks the model accordingly. It only routes down on a confident verdict; any doubt or failure stays on the large model. Measured on the benchmark task with Sonnet 5 as the large model: $1.75 to $0.28 with the task still completed. That task is mostly routine steps, so it shows routing down well and routing back up hardly at all; expect a smaller saving on design-heavy work.
 
 ## FAQ
 
