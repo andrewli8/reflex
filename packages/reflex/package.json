@@ -1,0 +1,47 @@
+{
+  "name": "agent-reflex",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "bin": {
+    "reflex": "./dist/cli.js",
+    "reflex-hook": "./dist/hook-bin.js"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "description": "Fast reflexes for long-running coding agents: a framework-neutral System-1 control layer around tool calls",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/andrewli8/reflex"
+  },
+  "keywords": [
+    "claude-code",
+    "agent",
+    "hooks",
+    "guardrails",
+    "jev",
+    "laya",
+    "system-1"
+  ],
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "optionalDependencies": {
+    "@anthropic-ai/sdk": "^0.127.0",
+    "ai": "^7.0.107",
+    "zod": "^4.6.5"
+  }
+}
