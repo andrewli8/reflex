@@ -1,0 +1,198 @@
+#!/usr/bin/env node
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { homedir } from 'node:os';
+import { readdirSync, statSync, unlinkSync } from 'node:fs';
+import { collapseSimulation, formatReport, replayTranscript, signalSeparation, type ReplayReport } from './replay.js';
+
+import { loadConfig } from './config-file.js';
+import { daemonProvider, providerFromConfig } from './providers/index.js';
+import { computeStats, formatStats, loadAllLogs } from './stats.js';
+import { buildReport, formatReport30 } from './report.js';
+import { appendEvent, readTail, reflexHome, sessionsDir } from './session.js';
+import { basename } from 'node:path';
+import { readDaemonInfo, serve, socketPath } from './serve.js';
+import type { ReflexEvent } from './critic.js';
+
+const EVENTS = ['PreToolUse', 'PostToolUse', 'PostToolUseFailure', 'PermissionRequest', 'UserPromptSubmit', 'SessionStart'] as const;
+
+/** Write the four Reflex hooks into <cwd>/.claude/settings.json, keeping everything already there. Idempotent. */
+export function init(cwd: string, hookCommand = defaultHookCommand()): { path: string; added: string[]; command: string } {
+  const dir = join(cwd, '.claude');
+  const path = join(dir, 'settings.json');
+  mkdirSync(dir, { recursive: true });
+  const settings: Record<string, unknown> = existsSync(path) ? (JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>) : {};
+  const hooks = { ...((settings['hooks'] as Record<string, unknown[]>) ?? {}) };
+  const added: string[] = [];
+  for (const ev of EVENTS) {
+    const list: { matcher?: string; hooks?: { type?: string; command?: string; timeout?: number }[] }[] = [...((hooks[ev] as { matcher?: string; hooks?: { type?: string; command?: string; timeout?: number }[] }[]) ?? [])];
+    if (list.some((g) => g.hooks?.some((h) => h.command === hookCommand || h.command?.includes('reflex-hook') || h.command?.includes('hook-bin')))) continue;
+    list.push({ matcher: '', hooks: [{ type: 'command', command: hookCommand, timeout: 3 }] });
+    hooks[ev] = list;
+    added.push(ev);
+  }
+  writeFileSync(path, JSON.stringify({ ...settings, hooks }, null, 2) + '\n');
+  return { path, added, command: hookCommand };
+}
+
+/** `reflex-hook` from a global install if it is on PATH (survives upgrades); otherwise the absolute path of this build. */
+function defaultHookCommand(host: 'claude-code' | 'codex' = 'claude-code'): string {
+  const onPath = (process.env['PATH'] ?? '').split(':').some((d) => existsSync(join(d, 'reflex-hook')));
+  const here = dirname(fileURLToPath(import.meta.url));
+  const base = onPath ? 'reflex-hook' : `node ${JSON.stringify(join(here, 'hook-bin.js'))}`;
+  return host === 'codex' ? `${base} --codex` : base;
+}
+
+/** Codex reads `<cwd>/.codex/hooks.json` (or `~/.codex/hooks.json`); same event names, regex matchers. Idempotent. */
+export function initCodex(cwd: string, hookCommand = defaultHookCommand('codex')): { path: string; added: string[]; command: string } {
+  const dir = join(cwd, '.codex');
+  const path = join(dir, 'hooks.json');
+  mkdirSync(dir, { recursive: true });
+  const file: Record<string, unknown> = existsSync(path) ? (JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>) : {};
+  const hooks = { ...((file['hooks'] as Record<string, unknown[]>) ?? {}) };
+  const added: string[] = [];
+  for (const ev of EVENTS) {
+    const list: { matcher?: string; hooks?: { type?: string; command?: string; timeout?: number }[] }[] = [...((hooks[ev] as { matcher?: string; hooks?: { type?: string; command?: string; timeout?: number }[] }[]) ?? [])];
+    if (list.some((g) => g.hooks?.some((h) => h.command === hookCommand || h.command?.includes('reflex-hook') || h.command?.includes('hook-bin')))) continue;
+    list.push({ matcher: '.*', hooks: [{ type: 'command', command: hookCommand, timeout: 3 }] });
+    hooks[ev] = list;
+    added.push(ev);
+  }
+  writeFileSync(path, JSON.stringify({ ...file, hooks }, null, 2) + '\n');
+  return { path, added, command: hookCommand };
+}
+
+/** Newest-first list of Claude Code transcripts under ~/.claude/projects. */
+export function findTranscripts(root = join(homedir(), '.claude', 'projects'), minBytes = 20_000): string[] {
+  const out: { p: string; m: number }[] = [];
+  let dirs: string[] = [];
+  try { dirs = readdirSync(root); } catch { return []; }
+  for (const d of dirs) {
+    let files: string[] = [];
+    try { files = readdirSync(join(root, d)); } catch { continue; }
+    for (const f of files) {
+      if (!f.endsWith('.jsonl')) continue;
+      const p = join(root, d, f);
+      try { const st = statSync(p); if (st.size >= minBytes) out.push({ p, m: st.mtimeMs }); } catch { /* skip */ }
+    }
+  }
+  return out.sort((a, b) => b.m - a.m).map((x) => x.p);
+}
+
+async function replay(argv: string[]): Promise<void> {
+  const n = Number(argv[argv.indexOf('--last') + 1]) || 20;
+  const files = argv.filter((a) => a.endsWith('.jsonl'));
+  const outArg = argv.indexOf('--out') >= 0 ? argv[argv.indexOf('--out') + 1] : undefined;
+  const jsonIn = argv.filter((a) => a.endsWith('.json') && a !== outArg);
+  if (!files.length && jsonIn.length) { const reports = jsonIn.flatMap((j) => JSON.parse(readFileSync(j, 'utf8')) as ReplayReport[]); console.log(formatReport(reports)); console.log('\n' + signalSeparation(reports, 'redundant')); console.log('\n' + signalSeparation(reports, 'relevant', false)); console.log('\n' + collapseSimulation(reports)); return; }
+  const paths = files.length ? files : findTranscripts().slice(0, n);
+  const config = loadConfig(process.cwd());
+  const provider = providerFromConfig(argv.includes('--provider') ? argv[argv.indexOf('--provider') + 1] : config.provider);
+  const reports: ReplayReport[] = [];
+  const importLogs = argv.includes('--import'); // persist replayed events as session logs so `reflex report` covers history
+  for (const p of paths) {
+    try {
+      const logPath = join(sessionsDir(), `replay-${basename(p, '.jsonl')}.jsonl`);
+      if (importLogs) { try { unlinkSync(logPath); } catch { /* fresh */ } }
+      reports.push(await replayTranscript(p, { cwd: process.cwd(), config, provider, ...(importLogs ? { log: (e) => appendEvent(logPath, e) } : {}) }));
+    } catch (e) { console.error(`skip ${p}: ${(e as Error).message}`); }
+  }
+  const out = argv.indexOf('--out') >= 0 ? argv[argv.indexOf('--out') + 1] : undefined;
+  if (out) writeFileSync(out, JSON.stringify(reports));
+  console.log(formatReport(reports));
+  console.log('\n' + signalSeparation(reports, 'redundant'));
+  console.log('\n' + signalSeparation(reports, 'relevant', false));
+  console.log('\n' + collapseSimulation(reports));
+}
+
+function newestLog(): string | undefined {
+  try {
+    return readdirSync(sessionsDir()).filter((f) => f.endsWith('.jsonl')).map((f) => join(sessionsDir(), f))
+      .sort((a, b) => statSync(b).mtimeMs - statSync(a).mtimeMs)[0];
+  } catch { return undefined; }
+}
+
+const ICON: Record<string, string> = { execute: '  ', nudge: '~ ', skip: 'x ', ask: '? ', replan: '! ', keep: '  ', trim: '- ', drop: 'x ' };
+
+function renderEvent(e: ReflexEvent): string | undefined {
+  if (e.phase === 'pre') return `${ICON[e.applied] ?? '  '}${e.summary.slice(0, 90)}${e.applied !== 'execute' ? `   REFLEX ${e.applied.toUpperCase()}: ${e.reason ?? ''}` : ''}`;
+  if (e.phase === 'post' && e.applied !== 'keep') return `${ICON[e.applied] ?? '  '}   REFLEX ${e.applied.toUpperCase()} ${e.bytesIn ?? 0} -> ${e.bytesOut ?? 0} bytes`;
+  return undefined;
+}
+
+/** Tail the newest session log, printing each decision as it lands. Ctrl-C to stop. */
+async function watch(): Promise<void> {
+  const path = newestLog();
+  if (!path) { console.log(`no session logs in ${sessionsDir()} yet`); return; }
+  console.log(`watching ${path}`);
+  let seen = 0;
+  for (;;) {
+    const events = readTail(path, 2 * 1024 * 1024);
+    for (const e of events.slice(seen)) { const line = renderEvent(e); if (line) console.log(line); }
+    seen = events.length;
+    const s = computeStats([events]);
+    process.stdout.write(`\r  calls ${s.calls}  nudges ${s.applied['nudge'] ?? 0}  skips ${s.applied['skip'] ?? 0}  asks ${s.asks.total}  trimmed ${Math.round((s.bytesIn - s.bytesOut) / 1024)} KB   `);
+    await new Promise((r) => setTimeout(r, 500));
+  }
+}
+
+function doctor(): void {
+  const info = readDaemonInfo();
+  const alive = info ? (() => { try { process.kill(info.pid, 0); return true; } catch { return false; } })() : false;
+  const cfg = loadConfig(process.cwd());
+  console.log([
+    `node       ${process.version}`,
+    `home       ${reflexHome()}`,
+    `config     mode=${cfg.mode} provider=${cfg.provider ?? 'none'}`,
+    `socket     ${socketPath()} ${existsSync(socketPath()) ? '(exists)' : '(absent)'}`,
+    `daemon     ${info ? `pid ${info.pid} provider ${info.provider} ${alive ? 'alive' : 'DEAD (stale daemon.json)'}` : 'not running'}`,
+    `logs       ${newestLog() ?? 'none'}`,
+    `Reflex advises the host permission system; it is not a security boundary.`,
+  ].join('\n'));
+}
+
+async function serveCmd(argv: string[]): Promise<void> {
+  const name = argv[argv.indexOf('--provider') + 1] || 'laya';
+  const idleMin = Number(argv[argv.indexOf('--idle') + 1]) || 30;
+  await serve({ provider: () => daemonProvider(name), providerName: name, idleMs: idleMin * 60_000, onReady: (i) => console.log(`reflex serve: ${name} on ${i.socketPath} (pid ${i.pid})`) });
+}
+
+/** Delete session logs and archived outputs older than N days (default 30). */
+export function clean(days: number, home = reflexHome()): number {
+  const cutoff = Date.now() - days * 86_400_000;
+  let n = 0;
+  for (const sub of ['sessions', 'archive', 'cache']) {
+    const dir = join(home, sub);
+    let files: string[] = [];
+    try { files = readdirSync(dir); } catch { continue; }
+    for (const f of files) { const p = join(dir, f); try { if (statSync(p).mtimeMs < cutoff) { unlinkSync(p); n++; } } catch { /* skip */ } }
+  }
+  return n;
+}
+
+async function main(argv: string[]): Promise<void> {
+  const [cmd] = argv;
+  if (cmd === 'clean') { const d = Number(String(argv[argv.indexOf('--older-than') + 1] ?? '30d').replace(/d$/, '')) || 30; console.log(`removed ${clean(d)} files older than ${d} days`); return; }
+  if (cmd === 'replay') return replay(argv.slice(1));
+  if (cmd === 'report') { const d = Number(String(argv[argv.indexOf('--days') + 1] ?? '30')) || 30; console.log(formatReport30(buildReport(d))); return; }
+  if (cmd === 'stats') { console.log(formatStats(computeStats(loadAllLogs()))); return; }
+  if (cmd === 'watch') return watch();
+  if (cmd === 'doctor') return doctor();
+  if (cmd === 'serve') return serveCmd(argv.slice(1));
+  if (cmd === 'init') {
+    const root = argv.includes('--global') ? homedir() : process.cwd();
+    if (argv.includes('--codex') || argv.includes('--all')) {
+      const c = initCodex(root);
+      console.log(c.added.length ? `Reflex hooks added to ${c.path} for Codex (${c.added.join(', ')}). Command: ${c.command}.` : `Reflex hooks already present in ${c.path}.`);
+      if (!argv.includes('--all')) return;
+    }
+    const r = init(root);
+    console.log(r.added.length ? `Reflex hooks added to ${r.path} (${r.added.join(', ')}). Command: ${r.command}. Mode: nudge. Reflex advises Claude Code's permission system; it is not a security boundary.${r.command.startsWith('node ') ? ' Install globally (npm i -g agent-reflex) so the hook survives upgrades.' : ''}` : `Reflex hooks already present in ${r.path}.`);
+    return;
+  }
+  console.log('usage: reflex init [--global] [--codex|--all] | replay [--last N] [--provider none|laya|jev|llm] [--import] [file.jsonl ...] | report [--days 30] | stats | watch | doctor | clean [--older-than 30d] | serve [--provider laya] [--idle MIN]');
+  process.exitCode = 1;
+}
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) void main(process.argv.slice(2));
