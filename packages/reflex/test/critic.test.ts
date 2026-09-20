@@ -314,3 +314,37 @@ describe('redaction', () => {
     expect(JSON.stringify(r.recentActions)).not.toContain('AKIAIOSFODNN7EXAMPLE');
   });
 });
+
+describe('levels', () => {
+  it('presets map to the right behaviour and explicit keys override', async () => {
+    const { applyLevel } = await import('../src/config.js');
+    expect(applyLevel('watch')).toMatchObject({ mode: 'shadow', provider: 'none' });
+    expect(applyLevel('ask')).toMatchObject({ mode: 'enforce', provider: 'jev', askBecomesDeny: false });
+    expect(applyLevel('auto')).toMatchObject({ mode: 'enforce', askBecomesDeny: true, collapse: { after: 3, checkpointEvery: 5 } });
+    expect(applyLevel('ultra').routing.enabled).toBe(true);
+  });
+  it('auto denies a destructive call with a reason instead of asking', async () => {
+    const r = new Reflex({ cwd, config: { ...defaultConfig, mode: 'enforce', askBecomesDeny: true }, goal: 'g', log: () => {} });
+    const d = await r.pre(call('Bash', { command: 'git push --force' }));
+    expect(d.host.action).toBe('deny');
+    expect(d.host.reason).toContain('unattended');
+    expect(d.event.applied).toBe('ask');
+  });
+  it('routes to the small model only on a confident small verdict', async () => {
+    const mk2 = (choice: string, confidence: number) => new Reflex({ cwd, goal: 'g', config: { ...defaultConfig, routing: { enabled: true } }, provider: { name: 'fake', maxStateTokens: 8000, decide: async () => ({ model: { type: 'choice', choice, confidence, probabilities: { small: confidence, large: 1 - confidence } } }) as never }, log: () => {} });
+    expect(await mk2('small', 0.9).route()).toBe('small');
+    expect(await mk2('small', 0.5).route()).toBe('large');
+    expect(await mk2('large', 0.9).route()).toBe('large');
+    const off = new Reflex({ cwd, goal: 'g', config: { ...defaultConfig, routing: { enabled: false } }, log: () => {} });
+    expect(await off.route()).toBe('large');
+  });
+});
+
+describe('edit summaries', () => {
+  it('include what changes so the decision model can judge scope', async () => {
+    const { summarize } = await import('../src/state.js');
+    expect(summarize('Edit', { file_path: 'src/auth0.config.ts', old_string: 'provider: "auth0"', new_string: 'provider: "clerk"' })).toBe('Edit src/auth0.config.ts "provider: "auth0"" → "provider: "clerk""');
+    expect(summarize('Write', { file_path: 'a.ts', content: 'export const x = 1;\n'.repeat(9) })).toContain('"export const x = 1;');
+    expect(summarize('Edit', { file_path: 'k.env', new_string: 'API_KEY=apikey_0123456789abcdefghijklmnop' })).not.toContain('0123456789');
+  });
+});

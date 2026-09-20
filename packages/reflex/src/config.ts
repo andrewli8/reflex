@@ -1,7 +1,17 @@
 export type Mode = 'shadow' | 'nudge' | 'enforce';
+export type Level = 'off' | 'watch' | 'nudge' | 'ask' | 'auto' | 'ultra';
+export const LEVELS: Level[] = ['off', 'watch', 'nudge', 'ask', 'auto', 'ultra'];
 
 export interface ReflexConfig {
+  /** One knob that sets the rest. Explicit keys in the config file still override the preset. */
+  level: Level;
   mode: Mode;
+  provider?: string;
+  /** Unattended levels: a call that would ask goes to deny with the reason instead, so the agent routes around it. */
+  askBecomesDeny: boolean;
+  /** AI SDK only: let a decision model pick a small or large model per step. */
+  routing: { enabled: boolean };
+  collapse: { after: number; checkpointEvery: number };
   thresholds: {
     outOfScopeAsk: number;
     outOfScopeReplan: number;
@@ -28,7 +38,11 @@ export interface ReflexConfig {
 }
 
 export const defaultConfig: ReflexConfig = {
+  level: 'nudge',
   mode: 'nudge',
+  askBecomesDeny: false,
+  routing: { enabled: false },
+  collapse: { after: 5, checkpointEvery: 10 },
   thresholds: {
     outOfScopeAsk: 0.85,
     outOfScopeReplan: 0.9,
@@ -48,3 +62,17 @@ export const defaultConfig: ReflexConfig = {
   gauge: { enabled: true, minBytes: 40 * 1024, everySteps: 30 },
   ledger: { enabled: true },
 };
+
+/** Presets. Each is a partial over defaultConfig; the caller overlays explicit keys afterwards. */
+export const LEVEL_PRESETS: Record<Level, Partial<ReflexConfig>> = {
+  off:   { mode: 'shadow', provider: 'none', trim: { ...defaultConfig.trim, enabled: false }, gauge: { ...defaultConfig.gauge, enabled: false }, ledger: { enabled: false } },
+  watch: { mode: 'shadow', provider: 'none', trim: { ...defaultConfig.trim, enabled: false } },
+  nudge: { mode: 'nudge', provider: 'none' },
+  ask:   { mode: 'enforce', provider: 'jev' },
+  auto:  { mode: 'enforce', provider: 'jev', askBecomesDeny: true, trim: { ...defaultConfig.trim, minBytes: 1200 }, collapse: { after: 3, checkpointEvery: 5 } },
+  ultra: { mode: 'enforce', provider: 'jev', askBecomesDeny: true, trim: { ...defaultConfig.trim, minBytes: 600, execMinBytes: 400 }, collapse: { after: 3, checkpointEvery: 5 }, routing: { enabled: true }, maxInterventionsPer5Steps: 4 },
+};
+
+export function applyLevel(level: Level): ReflexConfig {
+  return { ...defaultConfig, ...LEVEL_PRESETS[level], level };
+}

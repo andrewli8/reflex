@@ -36,9 +36,20 @@ describe('withReflex + reflexPrepareStep', () => {
     for (let i = 0; i < 8; i++) await read.execute({ path: `f${i}.ts` }, { toolCallId: `c${++n}` });
     const msgs: ModelMessage[] = [{ role: 'user', content: 'go' }, toolMsg('c1', 'contents of a.ts ' + 'filler_'.repeat(60)), toolMsg('c4', 'contents of f0.ts ' + 'filler_'.repeat(60))];
     const prep = reflexPrepareStep(r, { after: 3, checkpointEvery: 5 });
-    expect(prep({ stepNumber: 4, messages: msgs })).toBeUndefined();
-    const at5 = prep({ stepNumber: 5, messages: msgs });
+    expect(await prep({ stepNumber: 4, messages: msgs })).toBeUndefined();
+    const at5 = await prep({ stepNumber: 5, messages: msgs });
     expect(at5?.messages).toBeDefined();
     expect(JSON.stringify(at5!.messages)).toContain('collapsed');
+  });
+});
+
+describe('routing in prepareStep', () => {
+  it('returns a model override when the decision model says small', async () => {
+    const provider = { name: 'fake', maxStateTokens: 8000, decide: async () => ({ model: { type: 'choice', choice: 'small', confidence: 0.9, probabilities: { small: 0.9, large: 0.1 } } }) as never };
+    const r = new Reflex({ cwd: '/p', goal: 'g', config: { routing: { enabled: true } }, provider, log: () => {} });
+    const small = { id: 'small' } as never, large = { id: 'large' } as never;
+    const prep = reflexPrepareStep(r, { routing: { small, large }, checkpointEvery: 100 });
+    expect(await prep({ stepNumber: 0, messages: [] })).toBeUndefined();
+    expect((await prep({ stepNumber: 1, messages: [] }))?.model).toBe(small);
   });
 });

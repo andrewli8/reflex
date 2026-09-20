@@ -90,14 +90,21 @@ export function canonicalArgs(tool: string, args: Record<string, unknown>, cwd: 
   return { canonical: JSON.stringify(entries), paths: [...new Set(paths)] };
 }
 
+const snippet = (v: unknown, n = 40): string => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, n) : '');
+
 export function summarize(tool: string, args: Record<string, unknown>): string {
   const a = args as Record<string, string | undefined>;
+  // Edits carry what changes, not only where: a decision model cannot judge "replace auth0 with clerk" from a path alone.
+  const change = a['old_string'] !== undefined || a['new_string'] !== undefined
+    ? ` "${snippet(a['old_string'])}" → "${snippet(a['new_string'])}"`
+    : a['content'] !== undefined && tool !== 'Bash' ? ` "${snippet(a['content'], 60)}"` : a['patch'] !== undefined ? ` ${snippet(a['patch'], 80)}` : '';
   const body =
     tool === 'Bash' ? a['command'] :
+    (tool === 'Edit' || tool === 'Write' || tool === 'MultiEdit' || tool === 'apply_patch') ? `${a['file_path'] ?? a['path'] ?? ''}${change}` :
     tool === 'Grep' ? `"${a['pattern']}" ${a['path'] ?? ''}` :
     a['file_path'] ?? a['path'] ?? a['pattern'] ?? a['query'] ?? a['url'] ?? a['prompt'] ??
     Object.values(args).find((v): v is string => typeof v === 'string') ?? '';
-  return clip(redact(`${tool} ${(body ?? '').replace(/\s+/g, ' ').trim()}`.trim()), 120);
+  return clip(redact(`${tool} ${(body ?? '').replace(/\s+/g, ' ').trim()}`.trim()), 160);
 }
 
 export function makeAction(tool: string, args: Record<string, unknown>, cwd: string, step: number): Action {

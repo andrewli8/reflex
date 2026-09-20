@@ -1,1 +1,3 @@
-{ "mode": "nudge", "provider": "jev" }
+{
+  "level": "ask"
+}

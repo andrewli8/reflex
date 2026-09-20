@@ -7,6 +7,7 @@
 - Post-tool trim that keeps error-looking lines and archives the original under `~/.reflex/archive/`.
 - Providers: `none` (default), `jev` (hosted, 429 retry), `laya` (local, via `reflex serve` over a Unix socket), `llm` (Claude Haiku 4.5 baseline).
 - CLI: `init [--global]`, `replay`, `stats`, `watch`, `doctor`, `clean`, `serve`.
+- Levels (`off | watch | nudge | ask | auto | ultra`) as presets over the config, `reflex level`; unattended levels deny risky calls instead of asking; Jev per-step model routing in the AI SDK adapter.
 - Codex CLI host (`reflex-hook --codex`, `reflex init --codex|--all`), prompt-derived goals independent of host transcripts, `apply_patch` classification, install skill and agent install prompt.
 - Live reference tracking; session ledger injected on `SessionStart` after compaction/resume; user-facing context gauge via `systemMessage`; `reflex report` (near misses, polling loops, dead weight); `reflex replay --import`.
 - Vercel AI SDK adapter: `withReflex` tool wrapping and `reflexPrepareStep` checkpointed collapse; verb-based classification for arbitrary tool names.

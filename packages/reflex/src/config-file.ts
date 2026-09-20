@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { defaultConfig, type ReflexConfig } from './config.js';
+import { applyLevel, defaultConfig, LEVELS, type Level, type ReflexConfig } from './config.js';
 import { reflexHome } from './session.js';
 
 const MODES = new Set(['shadow', 'nudge', 'enforce']);
@@ -9,7 +9,11 @@ function pick(raw: unknown): Partial<ReflexConfig> {
   if (!raw || typeof raw !== 'object') return {};
   const r = raw as Record<string, unknown>;
   const out: Partial<ReflexConfig> = {};
+  if (typeof r['level'] === 'string' && (LEVELS as string[]).includes(r['level'])) out.level = r['level'] as Level;
   if (typeof r['mode'] === 'string' && MODES.has(r['mode'])) out.mode = r['mode'] as ReflexConfig['mode'];
+  if (typeof r['askBecomesDeny'] === 'boolean') out.askBecomesDeny = r['askBecomesDeny'];
+  if (r['routing'] && typeof r['routing'] === 'object') out.routing = { ...defaultConfig.routing, ...(r['routing'] as object) };
+  if (r['collapse'] && typeof r['collapse'] === 'object') out.collapse = { ...defaultConfig.collapse, ...(r['collapse'] as object) };
   if (Array.isArray(r['neverIntervene'])) out.neverIntervene = r['neverIntervene'].filter((x): x is string => typeof x === 'string');
   if (typeof r['maxInterventionsPer5Steps'] === 'number') out.maxInterventionsPer5Steps = r['maxInterventionsPer5Steps'];
   if (typeof r['askOnModelRisk'] === 'boolean') out.askOnModelRisk = r['askOnModelRisk'];
@@ -33,8 +37,12 @@ function readJson(path: string): unknown {
 }
 
 /** Project `reflex.config.json` overrides `~/.reflex/config.json` overrides defaults. Unknown keys are ignored, bad values dropped. */
-export function loadConfig(cwd: string): ReflexConfig & { provider?: string } {
+/** Preset from `level` first (project wins), then explicit keys from user then project files. */
+export function loadConfig(cwd: string): ReflexConfig {
   const user = pick(readJson(join(reflexHome(), 'config.json')));
   const project = pick(readJson(join(cwd, 'reflex.config.json')));
-  return { ...defaultConfig, ...user, ...project, thresholds: { ...defaultConfig.thresholds, ...user.thresholds, ...project.thresholds } };
+  const level = project.level ?? user.level ?? defaultConfig.level;
+  const base = applyLevel(level);
+  const { level: _u, ...userRest } = user; const { level: _p, ...projectRest } = project;
+  return { ...base, ...userRest, ...projectRest, thresholds: { ...base.thresholds, ...user.thresholds, ...project.thresholds }, trim: { ...base.trim, ...user.trim, ...project.trim } };
 }

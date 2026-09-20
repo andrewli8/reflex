@@ -15,7 +15,7 @@ export interface ToolResult { output: string; error?: boolean }
 
 export interface ReflexEvent {
   ts: number; step: number; toolUseId: string; tool: string; class: string; summary: string;
-  phase: 'pre' | 'post' | 'permission' | 'meta' | 'compact'; policy: PolicyKind | PostPolicyDecision['kind']; applied: Applied | PostPolicyDecision['kind'];
+  phase: 'pre' | 'post' | 'permission' | 'meta' | 'compact' | 'route'; policy: PolicyKind | PostPolicyDecision['kind']; applied: Applied | PostPolicyDecision['kind'];
   /** Pre events carry the normalized action so a session log can be folded back into state. */
   action?: Action; outcome?: Action['outcome']; resultDigest?: string; resultHash?: string; goal?: string;
   /** Post events: identifiers that first appeared in this result (capped). Pre events: steps whose results this call referenced. */
@@ -274,6 +274,30 @@ export class Reflex {
     const cutoff = this.actions.length - minAge;
     for (const e of this.events) if (e.phase === 'post' && e.step <= cutoff && !this.referenced.has(e.step) && e.toolUseId) out.add(e.toolUseId);
     return out;
+  }
+
+  /**
+   * AI SDK routing: ask the decision model whether the next step needs the large model.
+   * Returns 'small' | 'large'; 'large' on any failure so routing can only save, never degrade unattended.
+   */
+  async route(): Promise<'small' | 'large'> {
+    if (!this.config.routing.enabled || this.provider.maxStateTokens === 0) return 'large';
+    const last = this.actions.at(-1);
+    const proposed: Action = last ?? { tool: '', class: 'read', readOnly: true, summary: '(start)', signature: '', paths: [], step: 0 };
+    const state = `${this.state(proposed)}\nNEXT: the agent is about to decide its next action.`;
+    const t0 = this.now();
+    try {
+      const a = await this.provider.decide(state, {
+        model: { type: 'choice', instructions: 'Which model does the NEXT step need?', criteria: {
+          small: 'routine work: read a file, list files, run a command or tests, a one-line mechanical edit, report a result',
+          large: 'reasoning work: decide what to change, debug a failure, write or restructure code across files, plan',
+        } },
+      }, { signal: AbortSignal.timeout(this.config.providerTimeoutMs) });
+      const m = a.model; const choice = m.type === 'choice' && m.choice === 'small' && m.confidence >= 0.6 ? 'small' : 'large';
+      const event: ReflexEvent = { ts: this.now(), step: this.actions.length, toolUseId: '', tool: '', class: '', summary: choice, phase: 'route', policy: 'execute', applied: 'execute', source: 'model', providerMs: this.now() - t0, signals: m.type === 'choice' ? m.probabilities : null };
+      this.events = [...this.events, event]; this.log(event);
+      return choice;
+    } catch { return 'large'; }
   }
 
   /** Step of the last compaction; results before it are no longer in context and do not count as dead weight. */

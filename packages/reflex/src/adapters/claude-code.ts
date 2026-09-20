@@ -54,6 +54,7 @@ function safeTranscript(path: string | undefined, cwd: string): string | undefin
 
 async function handle(input: HookInput, host: Host): Promise<HookOutput> {
   const cwd = input.cwd ?? process.cwd();
+  if (loadConfig(cwd).level === 'off') return undefined; // installed but paused: no log, no output
   input = { ...input, ...(safeTranscript(input.transcript_path, cwd) ? { transcript_path: safeTranscript(input.transcript_path, cwd) } : { transcript_path: undefined }) } as HookInput;
   const config = loadConfig(cwd);
   const path = sessionPath(input.session_id, input.agent_id);

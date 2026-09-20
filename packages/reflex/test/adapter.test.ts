@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { handleHook, type HookInput } from '../src/adapters/claude-code.js';
@@ -149,5 +149,21 @@ describe('transcript containment', () => {
     await handleHook({ session_id: 'tc1', cwd, transcript_path: outside, hook_event_name: 'PreToolUse', tool_use_id: 'a', tool_name: 'Read', tool_input: { file_path: 'a.ts' } } as HookInput);
     const log = readFileSync(join(home, 'sessions', 'tc1.jsonl'), 'utf8');
     expect(log).not.toContain('Secret goal');
+  });
+});
+
+describe('level off and level file loading', () => {
+  it('level off makes the hook a no-op and level ask enforces', async () => {
+    const { loadConfig } = await import('../src/config-file.js');
+    writeFileSync(join(cwd, 'reflex.config.json'), JSON.stringify({ level: 'off' }));
+    expect(loadConfig(cwd)).toMatchObject({ level: 'off', mode: 'shadow' });
+    const read = base({ hook_event_name: 'PreToolUse', tool_use_id: 'o1', tool_name: 'Bash', tool_input: { command: 'git push --force' } });
+    expect(await handleHook(read)).toBeUndefined();
+    expect(existsSync(join(home, 'sessions', 's1.jsonl'))).toBe(false);
+    writeFileSync(join(cwd, 'reflex.config.json'), JSON.stringify({ level: 'ask', provider: 'none' }));
+    expect(loadConfig(cwd)).toMatchObject({ level: 'ask', mode: 'enforce', provider: 'none' });
+    expect((await handleHook(read))?.hookSpecificOutput).toMatchObject({ permissionDecision: 'ask' });
+    writeFileSync(join(cwd, 'reflex.config.json'), JSON.stringify({ level: 'auto', provider: 'none' }));
+    expect((await handleHook({ ...read, tool_use_id: 'o2' }))?.hookSpecificOutput).toMatchObject({ permissionDecision: 'deny' });
   });
 });

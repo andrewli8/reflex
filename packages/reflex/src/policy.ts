@@ -54,6 +54,7 @@ export function capMode(p: Decision, mode: Mode, patternAsk: boolean, cfg: Refle
   if (p.kind === 'execute' || mode === 'shadow') return { action: 'allow', applied: 'execute' };
   if (p.kind === 'warn') return { action: 'allow', applied: 'nudge', note: NOTE(reason) }; // never denies, in any mode
   if (p.kind === 'ask') {
+    if (cfg.askBecomesDeny) return { action: 'deny', applied: 'ask', reason: `[reflex] ${reason}. Not executed (unattended mode); find another way or ask the user.` };
     if (patternAsk || mode === 'enforce' || cfg.askOnModelRisk) return { action: 'ask', applied: 'ask', reason: `[reflex] ${reason}` };
     return { action: 'allow', applied: 'nudge', note: NOTE(reason) };
   }

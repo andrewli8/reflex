@@ -1,4 +1,4 @@
-import type { ModelMessage, ToolSet } from 'ai';
+import type { LanguageModel, ModelMessage, ToolSet } from 'ai';
 import { Reflex, type ToolCall } from '../critic.js';
 import { registerToolClasses } from '../classify.js';
 import type { ToolClass } from '../state.js';
@@ -12,6 +12,13 @@ import { estimateTokens } from '../state.js';
  *    every N steps instead of every step.
  * Only types are imported from `ai`; the package stays optional at runtime.
  */
+export interface RoutingOptions {
+  /** Cheap model for routine steps. */
+  small: LanguageModel;
+  /** Capable model for reasoning steps (the run's default). */
+  large: LanguageModel;
+}
+
 export interface CollapseOptions {
   /** Results younger than this many tool calls are never collapsed. */
   after?: number;
@@ -19,6 +26,8 @@ export interface CollapseOptions {
   checkpointEvery?: number;
   /** Results smaller than this are left alone; collapsing them saves nothing. */
   minBytes?: number;
+  /** Per-step model routing by the decision model (config.routing.enabled must be true). */
+  routing?: RoutingOptions;
 }
 
 const STUB = (toolName: string, bytes: number) => `[reflex] ${toolName} result collapsed (${bytes} bytes, not referenced since). Ask for it again if needed.`;
@@ -47,12 +56,18 @@ export function collapseMessages(messages: ModelMessage[], unreferenced: Readonl
 
 /** `prepareStep` that collapses at checkpoints. Returned messages carry forward, so a collapse is permanent for the run. */
 export function reflexPrepareStep(reflex: Reflex, o: CollapseOptions = {}) {
-  const every = o.checkpointEvery ?? 10;
-  const after = o.after ?? 5;
-  return ({ stepNumber, messages }: { stepNumber: number; messages: ModelMessage[] }) => {
-    if (stepNumber === 0 || stepNumber % every !== 0) return undefined;
-    const { messages: next, collapsed } = collapseMessages(messages, reflex.unreferenced(after), o);
-    return collapsed ? { messages: next } : undefined;
+  const every = o.checkpointEvery ?? reflex.config.collapse.checkpointEvery;
+  const after = o.after ?? reflex.config.collapse.after;
+  return async ({ stepNumber, messages }: { stepNumber: number; messages: ModelMessage[] }) => {
+    const out: { messages?: ModelMessage[]; model?: LanguageModel } = {};
+    if (stepNumber > 0 && stepNumber % every === 0) {
+      const { messages: next, collapsed } = collapseMessages(messages, reflex.unreferenced(after), o);
+      if (collapsed) out.messages = next;
+    }
+    if (o.routing && reflex.config.routing.enabled && stepNumber > 0) {
+      out.model = (await reflex.route()) === 'small' ? o.routing.small : o.routing.large;
+    }
+    return out.messages || out.model ? out : undefined;
   };
 }
 

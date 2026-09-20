@@ -85,20 +85,20 @@ Prefer to let the agent do it? Paste `INSTALL-PROMPT.md` into any coding agent, 
 | `reflex key jev <key>` | store a decision-model key for hooks that lack your shell env |
 | `reflex clean --older-than 30d` | delete old logs and archives |
 
-## Modes
+## Levels
 
-Default is `nudge`. Reflex never blocks a call in that mode. It attaches a one-line note the model reads, and destructive commands go to your normal permission prompt.
+One knob. `reflex level <name>` writes it to `reflex.config.json` (`--global` for `~/.reflex/config.json`).
 
-```json
-// reflex.config.json
-{ "mode": "nudge", "provider": "none" }
-```
-
-| mode | duplicate read | destructive command | oversized output |
+| level | what Reflex does | risky calls | model |
 |---|---|---|---|
-| shadow | logged | logged | logged |
-| nudge | note to the model | permission prompt | trimmed, original archived |
-| enforce | denied with a reason | permission prompt | trimmed, original archived |
+| `off` | nothing; hooks stay installed | agent decides | none |
+| `watch` | logs only, so `report` and `replay` work | agent decides | none |
+| `nudge` (default) | notes on duplicates and loops, trim, constraints restated, ledger after compaction | your permission prompt | none |
+| `ask` | `nudge` plus duplicates denied and Jev scoring every write against your constraints | your permission prompt | Jev |
+| `auto` | unattended: risky calls are denied with a reason so the agent routes around them; aggressive trim and collapse | denied | Jev |
+| `ultra` | `auto` plus token-first trim, Jev on reads, and per-step model routing on the AI SDK | denied | Jev |
+
+Start at `nudge`. Move to `ask` once `reflex report` looks right on your history. Use `auto` or `ultra` for CI and overnight runs, where a prompt would hang forever. Any key in the config file still overrides its level's preset.
 
 A denied call can be re-issued with `reflex:force` in its description. Reflex stops nudging a pattern once you override it. At most two interventions per five steps.
 
@@ -130,6 +130,8 @@ await generateText({
 ```
 
 Tool results nothing referenced collapse to one line at each checkpoint. That is where the 63% comes from.
+
+With `level: ultra` and `routing: { small, large }` passed to `reflexPrepareStep`, Jev decides before each step whether the next action is routine (read, list, run tests, one-line edit) or reasoning (design a change, debug, multi-file edit) and picks the model accordingly. It only routes down on a confident verdict; any doubt or failure stays on the large model.
 
 ## FAQ
 

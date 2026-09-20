@@ -7,6 +7,7 @@ import { readdirSync, statSync, unlinkSync } from 'node:fs';
 import { collapseSimulation, formatReport, replayTranscript, signalSeparation, type ReplayReport } from './replay.js';
 
 import { loadConfig } from './config-file.js';
+import { LEVELS, type Level } from './config.js';
 import { daemonProvider, providerFromConfig } from './providers/index.js';
 import { computeStats, formatStats, loadAllLogs } from './stats.js';
 import { buildReport, formatReport30 } from './report.js';
@@ -170,7 +171,7 @@ function doctor(): void {
   console.log([
     `node       ${process.version}`,
     `home       ${reflexHome()}`,
-    `config     mode=${cfg.mode} provider=${cfg.provider ?? 'none'}`,
+    `level      ${cfg.level}  (mode ${cfg.mode}, provider ${cfg.provider ?? 'none'}${cfg.askBecomesDeny ? ', risky calls denied' : ''}${cfg.routing.enabled ? ', routing on' : ''})`,
     `keys       jev ${readSecret('TYPESAFE_API_KEY') ? 'ok' : 'missing (reflex key jev <key>)'}   llm ${readSecret('ANTHROPIC_API_KEY') ? 'ok' : 'missing'}`,
     `socket     ${socketPath()} ${existsSync(socketPath()) ? '(exists)' : '(absent)'}`,
     `daemon     ${info ? `pid ${info.pid} provider ${info.provider} ${alive ? 'alive' : 'DEAD (stale daemon.json)'}` : 'not running'}`,
@@ -228,6 +229,21 @@ async function main(argv: string[]): Promise<void> {
     }
     return;
   }
+  if (cmd === 'level') {
+    const name = argv[1] as Level | undefined;
+    if (!name || !LEVELS.includes(name)) { console.log(`usage: reflex level <${LEVELS.join('|')}> [--global]\n  off    hooks installed, do nothing\n  watch  log only; feeds report and replay\n  nudge  notes, trim, constraints, ledger; destructive calls to the prompt (default)\n  ask    nudge + duplicates denied + Jev on writes; risky calls to the prompt\n  auto   unattended: risky calls denied with a reason, aggressive trim and collapse\n  ultra  auto + token-first trim, Jev on reads, model routing (AI SDK)`); process.exitCode = 1; return; }
+    const path = argv.includes('--global') ? join(reflexHome(), 'config.json') : join(process.cwd(), 'reflex.config.json');
+    let cur: Record<string, unknown> = {};
+    try { cur = JSON.parse(readFileSync(path, 'utf8')); } catch { /* new */ }
+    mkdirSync(dirname(path), { recursive: true });
+    // The level owns these keys; leaving stale explicit values would silently override the preset.
+    for (const k of ['mode', 'provider', 'askBecomesDeny', 'routing', 'collapse']) delete cur[k];
+    writeFileSync(path, JSON.stringify({ ...cur, level: name }, null, 2) + '\n');
+    const cfg = loadConfig(process.cwd());
+    console.log(`level ${name} written to ${path} (mode ${cfg.mode}, provider ${cfg.provider ?? 'none'}${cfg.askBecomesDeny ? ', risky calls denied' : ''}${cfg.routing.enabled ? ', routing on' : ''})`);
+    if ((cfg.provider === 'jev') && !readSecret('TYPESAFE_API_KEY')) console.log('note: no Jev key found; run `reflex key jev <key>` or the model checks fall back to deterministic only');
+    return;
+  }
   if (cmd === 'key') {
     const [provider, value] = [argv[1], argv[2]];
     const names: Record<string, string> = { jev: 'TYPESAFE_API_KEY', typesafe: 'TYPESAFE_API_KEY', llm: 'ANTHROPIC_API_KEY', anthropic: 'ANTHROPIC_API_KEY' };
@@ -236,7 +252,7 @@ async function main(argv: string[]): Promise<void> {
     console.log(`stored ${name} in ${writeSecret(name, value)}`);
     return;
   }
-  console.log('usage: reflex init [--global] [--codex|--all] [--no-report] | key <jev|llm> <api-key> | replay [--last N] [--provider none|laya|jev|llm] [--import] [file.jsonl ...] | report [--days 30] | stats | watch | doctor | clean [--older-than 30d] | serve [--provider laya] [--idle MIN]');
+  console.log('usage: reflex init [--global] [--codex|--all] [--no-report] | level <off|watch|nudge|ask|auto|ultra> | key <jev|llm> <api-key> | replay [--last N] [--provider none|laya|jev|llm] [--import] [file.jsonl ...] | report [--days 30] | stats | watch | doctor | clean [--older-than 30d] | serve [--provider laya] [--idle MIN]');
   process.exitCode = 1;
 }
 
