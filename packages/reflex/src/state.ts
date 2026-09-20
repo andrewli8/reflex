@@ -33,7 +33,10 @@ export interface ControlState {
 const PATH_KEYS = new Set(['file_path', 'path', 'notebook_path', 'cwd', 'directory']);
 const QUERY_KEYS = new Set(['pattern', 'query', 'q', 'glob']);
 const IGNORED_KEYS = new Set(['description', 'reason', 'timeout', 'run_in_background']);
-const CONSTRAINT_RE = /\b(do not|don't|never|must|only|without|keep)\b/i;
+// Imperative constraints only: "Do not change X", "Never push", "Only edit app code", "Must keep the API stable".
+// Descriptive uses ("agents do not only need reasoning", "this must be why") are excluded.
+const CONSTRAINT_RE = /^(?:please\s+)?(?:do not|don't|never|always|only|avoid|must not|keep|without)\b|,\s*(?:but\s+)?(?:do not|don't|never)\b|\bmust (?:not|keep|stay|remain|use)\b|\bnever\b/i;
+const NOT_CONSTRAINT_RE = /\bnot only\b|\bdo not (?:only|need|have|know|think|seem|want)\b/i;
 
 export const sha = (s: string): string => createHash('sha256').update(s).digest('hex').slice(0, 16);
 export const estimateTokens = (s: string): number => Math.ceil(s.length / 4);
@@ -89,8 +92,8 @@ export function makeAction(tool: string, args: Record<string, unknown>, cwd: str
 export function extractConstraints(goal: string): string[] {
   return goal
     .split(/(?<=[.!?;])\s+|\n+/)
-    .map((s) => s.trim())
-    .filter((s) => s && CONSTRAINT_RE.test(s))
+    .map((s) => s.replace(/^[>#*\-\s]+/, '').trim())
+    .filter((s) => s && s.length <= 240 && CONSTRAINT_RE.test(s) && !NOT_CONSTRAINT_RE.test(s))
     .map((s) => clip(s, 200))
     .slice(0, 6);
 }

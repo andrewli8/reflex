@@ -246,3 +246,11 @@ describe('reference tracking, gauge and ledger', () => {
     expect(msgs[0]).toContain('/compact');
   });
 });
+
+describe('constraint extraction', () => {
+  it('keeps imperatives and drops descriptive "do not only" prose', async () => {
+    const { extractConstraints } = await import('../src/state.js');
+    const text = '> Long-running agents do not only need better reasoning. They need fast reflexes.\nFix the redirect bug. Do not change authentication providers. Only touch application code; never push to main. This must be the cause.';
+    expect(extractConstraints(text)).toEqual(['Do not change authentication providers.', 'Only touch application code;', 'never push to main.']);
+  });
+});
