@@ -1,0 +1,8 @@
+{
+  "name": "reflex-bench",
+  "private": true,
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": { "bench": "node run.mjs" },
+  "dependencies": { "ai": "^7.0.105", "agent-reflex": "0.0.1" }
+}

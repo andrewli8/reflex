@@ -64,7 +64,14 @@ const result = await generateText({
 - **Session ledger after every compaction.** Reflex tracks which results the agent later used. When Claude Code compacts or resumes, the `SessionStart` hook hands the model a ledger: files read (used or not), files edited, commands run with outcomes, constraints, and what was escalated. The agent does not re-read what it already verified.
 - **Context gauge for you.** When unreferenced tool output piles up (default 40 KB), Reflex tells you, not the model: `38 KB of tool output from 61 results has not been referenced since it was read. /compact when convenient.`
 - **`reflex report`.** Every destructive or out-of-scope call from the last 30 days with the task it happened in, polling loops, dead weight by source. Run `reflex replay --import` first to include sessions from before you installed Reflex.
-- **Retroactive collapse for AI SDK agents.** `withReflex(tools, reflex)` plus `reflexPrepareStep(reflex)` shrink tool results nothing referenced to one line at checkpoints, keeping the prompt cache between them. Simulated on 20 real sessions: 78% of tool-output tokens at K=5 with 9% of results needing a restore.
+- **Retroactive collapse for AI SDK agents.** `withReflex(tools, reflex)` plus `reflexPrepareStep(reflex)` shrink tool results nothing referenced to one line at checkpoints, keeping the prompt cache between them. Measured live (`packages/bench`, Haiku 4.5 via AI Gateway, 30-file read-then-fix task, one tool call per turn, two repeats per arm):
+
+  | arm | steps | input tokens | task done | wall clock |
+  |---|---|---|---|---|
+  | baseline | 39 | 716,862 | 2/2 | 59 s |
+  | Reflex, collapse after 3 steps, checkpoint every 5 | 40 | 266,982 | 2/2 | 45 s |
+
+  63% fewer input tokens for the same result. Rerun with `AI_GATEWAY_API_KEY=... npm run bench -w reflex-bench`.
 
 ## See what it would have done first
 
