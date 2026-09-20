@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reflex</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f2ec;--ink:#111110;--mute:#8a877f;--rule:#d9d5cb;--acc:#ff4a1c;--ok:#1d9a5b;--card:#fbfaf7}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:"Geist Mono",ui-monospace,monospace;overflow:hidden}
+.stage{position:relative;width:100vw;height:100vh}
+.scene{position:absolute;inset:0;display:grid;place-items:center;opacity:0;visibility:hidden}
+.brand{position:absolute;top:34px;left:40px;font-family:"Instrument Serif",serif;font-size:26px;letter-spacing:-.01em}
+.brand i{font-style:italic;color:var(--acc)}
+.step{position:absolute;top:38px;right:40px;font-size:12px;color:var(--mute);letter-spacing:.14em;text-transform:uppercase}
+.h{font-family:"Instrument Serif",serif;font-size:clamp(40px,6.2vw,92px);line-height:1.02;letter-spacing:-.02em;text-align:center;max-width:16ch}
+.h i{font-style:italic;color:var(--acc)}
+.h .w{display:inline-block;overflow:hidden;vertical-align:bottom}
+.h .w span{display:inline-block;transform:translateY(110%)}
+.sub{margin-top:26px;color:var(--mute);font-size:14px;text-align:center;max-width:56ch;line-height:1.6}
+.wrap{width:min(860px,88vw);display:flex;flex-direction:column;gap:14px;align-items:stretch}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:20px 24px;display:grid;grid-template-columns:110px 1fr auto;gap:18px;align-items:center;font-size:16px;position:relative;box-shadow:0 1px 0 rgba(0,0,0,.03)}
+.card .k{color:var(--mute);font-size:12px;letter-spacing:.12em;text-transform:uppercase}
+.card .r{color:var(--mute);font-size:13px;white-space:nowrap}
+.card .r.ok{color:var(--ok)}.card .r.acc{color:var(--acc)}
+.card .line{position:absolute;left:24px;right:24px;top:50%;height:2px;background:var(--acc);transform:scaleX(0);transform-origin:left}
+.note{color:var(--acc);font-size:14px;margin-top:6px;opacity:0}
+.script{grid-column:1/4;overflow:hidden;height:0;font-size:14px;color:var(--mute);line-height:1.9;border-top:1px solid var(--rule);margin-top:6px}
+.script b{color:var(--ink);font-weight:500;background:linear-gradient(transparent 60%,rgba(255,74,28,.18) 60%)}
+.stamp{position:absolute;right:24px;top:50%;transform:translateY(-50%) rotate(-6deg) scale(1.6);opacity:0;border:2px solid var(--acc);color:var(--acc);border-radius:6px;padding:4px 10px;font-weight:600;letter-spacing:.14em;font-size:13px}
+.pin{width:min(860px,88vw);border-left:3px solid var(--ink);padding:6px 16px;font-size:15px;color:var(--ink);margin-bottom:34px;opacity:0}
+.pin small{display:block;color:var(--mute);font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px}
+.meter{grid-column:1/4;display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;font-size:13px;color:var(--mute);margin-top:8px}
+.meter .bar{height:6px;background:var(--rule);border-radius:3px;overflow:hidden}
+.meter .bar i{display:block;height:100%;width:100%;background:var(--acc);transform:scaleX(0);transform-origin:left}
+.meter .v{font-family:"Instrument Serif",serif;font-size:26px;color:var(--ink);min-width:3.4ch;text-align:right;font-variant-numeric:tabular-nums}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:60px;width:min(980px,90vw);align-items:end}
+.col .lab{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);margin-bottom:10px}
+.stack{height:300px;display:flex;flex-direction:column-reverse;gap:3px;border-bottom:1px solid var(--ink);padding-bottom:6px}
+.stack i{display:block;height:10px;background:var(--ink);border-radius:2px;transform:scaleX(0);transform-origin:left;opacity:.85}
+.stack i.thin{background:var(--acc)}
+.num{font-family:"Instrument Serif",serif;font-size:56px;letter-spacing:-.02em;margin-top:14px;font-variant-numeric:tabular-nums}
+.num small{display:block;font:400 12px/1.4 "Geist Mono";color:var(--mute);letter-spacing:.12em;text-transform:uppercase}
+.pct{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-family:"Instrument Serif",serif;font-style:italic;font-size:clamp(90px,16vw,220px);color:var(--acc);opacity:0;letter-spacing:-.04em;pointer-events:none}
+.cmd{font-size:clamp(18px,2.6vw,30px);background:var(--ink);color:var(--bg);padding:20px 28px;border-radius:12px;white-space:nowrap;overflow:hidden;width:0}
+.cmd::after{content:"";display:inline-block;width:.6ch;height:1.1em;background:var(--acc);vertical-align:-.15em;margin-left:.2ch;animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:0}}
+.hosts{margin-top:22px;color:var(--mute);font-size:13px;letter-spacing:.14em;text-transform:uppercase;text-align:center}
+.foot{position:absolute;bottom:30px;left:40px;right:40px;display:flex;justify-content:space-between;color:var(--mute);font-size:12px}
+@media (prefers-reduced-motion: reduce){.scene{opacity:1;visibility:visible;position:static}}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="brand">Re<i>flex</i></div>
+  <div class="step" id="step"></div>
+
+  <section class="scene" id="s0">
+    <div>
+      <div class="h" id="h0">Your agent makes a thousand tool calls. <i>Reflex reads every one in 30 ms.</i></div>
+      <p class="sub">A hook for Claude Code, Codex and AI SDK agents. Deterministic checks first. A decision model, Jev, only where judgment is needed.</p>
+    </div>
+  </section>
+
+  <section class="scene" id="s1">
+    <div class="wrap">
+      <div class="card c1"><span class="k">step 1</span><span>Read src/auth.ts</span><span class="r ok">ok · 412 bytes</span></div>
+      <div class="card c2"><span class="k">step 2</span><span>Read src/auth.ts</span><span class="r acc">identical to step 1</span><i class="line"></i></div>
+      <div class="note n1">[reflex] skipped. The earlier result began "export const login = …". Reuse it.</div>
+    </div>
+  </section>
+
+  <section class="scene" id="s2">
+    <div class="wrap">
+      <div class="card c3"><span class="k">step 3</span><span>Bash ./sync.sh</span><span class="r">AGENTS.md said run it first</span>
+        <div class="script">git fetch -q<br><b>git reset --hard origin/main</b><br><b>git push --force origin main</b></div>
+        <div class="stamp">ASK</div>
+      </div>
+      <div class="note n2">[reflex] git reset --hard inside ./sync.sh. Sent to your permission prompt. Reflex read the script; a pattern list would have missed it.</div>
+    </div>
+  </section>
+
+  <section class="scene" id="s3">
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <div class="pin"><small>your task, turn 1</small>Fix the login redirect bug. <b>Do not change authentication providers.</b></div>
+      <div class="wrap">
+        <div class="card c4"><span class="k">step 4</span><span>Edit src/auth0.config.ts → replace Auth0 with Clerk</span><span class="r">write</span>
+          <div class="meter"><span>Jev · conflicts with a constraint?</span><span class="bar"><i class="m1"></i></span><span class="v v1">0.00</span></div>
+        </div>
+        <div class="card c5"><span class="k">step 5</span><span>Edit src/routes.ts → fix redirect handler</span><span class="r">write</span>
+          <div class="meter"><span>Jev · conflicts with a constraint?</span><span class="bar"><i class="m2"></i></span><span class="v v2">0.00</span></div>
+        </div>
+        <div class="note n3">[reflex] step 4 asked, 184 ms. Step 5 executed. Same question, same model, different answer, because the constraint is in the state Jev sees.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="scene" id="s4">
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <div class="cols">
+        <div class="col"><div class="lab">without reflex</div><div class="stack" id="stA"></div><div class="num" id="nA">0<small>input tokens, 39 steps</small></div></div>
+        <div class="col"><div class="lab">with reflex</div><div class="stack" id="stB"></div><div class="num" id="nB">0<small>input tokens, same task, same model</small></div></div>
+      </div>
+      <p class="sub s4sub">Every result the agent keeps is re-read on every later step. Reflex collapses results nothing referenced, at checkpoints, so the prompt cache survives between them.</p>
+    </div>
+    <div class="pct" id="pct">−62%</div>
+  </section>
+
+  <section class="scene" id="s5">
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <div class="cmd" id="cmd">npm i -g agent-reflex && reflex init</div>
+      <div class="hosts">Claude Code · Codex · Vercel AI SDK · MIT</div>
+    </div>
+  </section>
+
+  <div class="foot"><span>Reflex advises the agent's own permission system. It is not a sandbox.</span><span>numbers from docs/PLAN.md</span></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+// Split hero words for a staggered rise.
+const h0 = document.getElementById('h0');
+h0.innerHTML = h0.innerHTML.replace(/(<i>|<\/i>)/g, m => m).split(/(\s+|<i>|<\/i>)/).map(t => (t.trim() && !/^<\/?i>$/.test(t)) ? `<span class="w"><span>${t}</span></span>` : t).join('');
+
+// Token stacks for scene 4: 39 steps, bar height scaled to the real per-step input cost.
+const A = [981,1289,2302,3298,4294,5290,6286,7282,8278,9274,10270,11266,12262,13258,14254,15250,16246,17242,18238,19234,20230,21226,22222,23218,24214,25210,26206,27202,28198,29194,30190,31186,31848,31995,32129,32246,32331,32331,32331];
+const B = [981,1288,2309,3353,4350,5346,6342,7338,8334,9330,6249,7245,8241,9237,10233,6254,7251,8248,9245,10242,6849,7845,8841,9837,10833,7000,7996,8992,9988,10984,8891,9027,5716,5848,5962,5962,5962,5962,5962];
+const stA = document.getElementById('stA'), stB = document.getElementById('stB');
+for (let i = 0; i < 39; i++) { const a = document.createElement('i'); a.style.height = '5px'; stA.appendChild(a); const b = document.createElement('i'); b.style.height = '5px'; if (i >= 10 && i % 5 === 0) b.className = 'thin'; // the collapse steps: input drops back down stB.appendChild(b); }
+const sum = xs => xs.reduce((a, b) => a + b, 0);
+const fmt = n => Math.round(n).toLocaleString('en-US');
+document.getElementById('pct').textContent = `−${Math.round(100 * (1 - sum(B) / sum(A)))}%`;
+
+const stepEl = document.getElementById('step');
+const tl = gsap.timeline({ repeat: -1, defaults: { ease: 'power3.out' } });
+const show = (id, label) => tl.set(stepEl, { textContent: label }).to(id, { autoAlpha: 1, duration: .6 });
+const hide = id => tl.to(id, { autoAlpha: 0, duration: .5, ease: 'power2.in' }, '+=2.2');
+
+// 0 · hero
+show('#s0', '');
+tl.to('#h0 .w span', { y: 0, duration: 1, stagger: .06, ease: 'power4.out' }, '<');
+tl.from('#s0 .sub', { y: 14, opacity: 0, duration: .8 }, '-=.4');
+hide('#s0');
+
+// 1 · duplicate read
+show('#s1', '01 · duplicate');
+tl.from('.c1', { y: 24, opacity: 0, duration: .7 }, '<');
+tl.from('.c2', { y: 24, opacity: 0, duration: .7 }, '+=.9');
+tl.to('.c2 .line', { scaleX: 1, duration: .5, ease: 'power2.inOut' }, '+=.5');
+tl.to('.c2', { opacity: .45, duration: .4 }, '<');
+tl.to('.n1', { opacity: 1, y: 0, duration: .5 }, '-=.2');
+hide('#s1');
+
+// 2 · script inspection
+show('#s2', '02 · destructive, hidden in a script');
+tl.from('.c3', { y: 24, opacity: 0, duration: .7 }, '<');
+tl.to('.c3 .script', { height: 92, duration: .8, ease: 'power3.inOut' }, '+=.9');
+tl.to('.c3 .stamp', { opacity: 1, scale: 1, duration: .35, ease: 'back.out(2)' }, '+=.5');
+tl.to('.n2', { opacity: 1, duration: .5 }, '-=.1');
+hide('#s2');
+
+// 3 · Jev and the constraint
+show('#s3', '03 · judgment, with Jev');
+tl.to('.pin', { opacity: 1, duration: .6 }, '<');
+tl.from('.c4', { y: 24, opacity: 0, duration: .7 }, '+=.5');
+const v1 = { v: 0 }, v2 = { v: 0 };
+tl.to('.m1', { scaleX: .99, duration: 1.1, ease: 'power2.inOut' }, '+=.4');
+tl.to(v1, { v: .99, duration: 1.1, ease: 'power2.inOut', onUpdate: () => document.querySelector('.v1').textContent = v1.v.toFixed(2) }, '<');
+tl.to('.c4', { borderColor: '#ff4a1c', duration: .3 }, '-=.2');
+tl.from('.c5', { y: 24, opacity: 0, duration: .7 }, '+=.7');
+tl.to('.m2', { scaleX: .09, duration: .9, ease: 'power2.inOut' }, '+=.3');
+tl.to(v2, { v: .09, duration: .9, ease: 'power2.inOut', onUpdate: () => document.querySelector('.v2').textContent = v2.v.toFixed(2) }, '<');
+tl.to('.n3', { opacity: 1, duration: .5 }, '+=.2');
+hide('#s3');
+
+// 4 · context
+show('#s4', '04 · what the model re-reads');
+const nA = { v: 0 }, nB = { v: 0 };
+tl.to('#stA i', { scaleX: (i) => A[i] / 32331, duration: .25, stagger: .09, ease: 'power1.out' }, '<');
+tl.to('#stB i', { scaleX: (i) => B[i] / 32331, duration: .25, stagger: .09, ease: 'power1.out' }, '<');
+tl.to(nA, { v: sum(A), duration: 39 * .09 + .25, ease: 'none', onUpdate: () => document.getElementById('nA').firstChild.textContent = fmt(nA.v) }, '<');
+tl.to(nB, { v: sum(B), duration: 39 * .09 + .25, ease: 'none', onUpdate: () => document.getElementById('nB').firstChild.textContent = fmt(nB.v) }, '<');
+tl.to('.cols, .s4sub', { opacity: .18, duration: .6 }, '+=.6');
+tl.to('#pct', { opacity: 1, scale: 1, duration: .7, ease: 'power4.out' }, '<');
+tl.to('#pct', { opacity: 0, duration: .5 }, '+=2');
+tl.to('.cols, .s4sub', { opacity: 1, duration: .4 }, '<');
+hide('#s4');
+
+// 5 · install
+show('#s5', '');
+tl.to('#cmd', { width: 'auto', duration: 1.6, ease: 'steps(38)' }, '<');
+tl.from('.hosts', { opacity: 0, y: 10, duration: .6 }, '-=.3');
+tl.to('#s5', { autoAlpha: 0, duration: .6 }, '+=3.4');
+
+// reset transient state so the loop replays cleanly
+tl.set('#h0 .w span', { y: '110%' });
+tl.set('.c2 .line, .m1, .m2', { scaleX: 0 });
+tl.set(['.c2'], { opacity: 1 });
+tl.set(['.n1', '.n2', '.n3', '.pin', '.c3 .stamp', '#pct'], { opacity: 0 });
+tl.set('.c3 .stamp', { scale: 1.6 });
+tl.set('.c3 .script', { height: 0 });
+tl.set('.c4', { borderColor: '#d9d5cb' });
+tl.set('#stA i, #stB i', { scaleX: 0 });
+tl.set('#cmd', { width: 0 });
+tl.call(() => { document.getElementById('nA').firstChild.textContent = '0'; document.getElementById('nB').firstChild.textContent = '0'; document.querySelector('.v1').textContent = '0.00'; document.querySelector('.v2').textContent = '0.00'; });
+</script>
+</body>
+</html>
