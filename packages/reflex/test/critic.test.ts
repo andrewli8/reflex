@@ -375,3 +375,13 @@ describe('pattern judgment', () => {
     expect(calls).toBe(1);
   });
 });
+
+describe('read-class output is protected from trim', () => {
+  it('keeps a 6 KB grep result and still trims a 20 KB one', async () => {
+    const { r } = mk({ mode: 'enforce' });
+    const c = call('Bash', { command: 'grep -rn "splash" src/' }); await r.pre(c);
+    expect((await r.post(c, { output: 'src/a.ts:12: splash\n'.repeat(300) })).kind).toBe('keep');
+    const c2 = call('Bash', { command: 'grep -rn "x" src/' }); await r.pre(c2);
+    expect((await r.post(c2, { output: 'src/b.ts:12: x here\n'.repeat(1100) })).kind).toBe('trim');
+  });
+});

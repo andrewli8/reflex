@@ -215,6 +215,7 @@ export function clean(days: number, home = reflexHome()): number {
 
 async function main(argv: string[]): Promise<void> {
   const [cmd] = argv;
+  if (cmd === '--version' || cmd === '-v' || cmd === 'version') { try { console.log((JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'package.json'), 'utf8')) as { version: string }).version); } catch { console.log('unknown'); } return; }
   if (cmd === 'clean') { const d = Number(String(argv[argv.indexOf('--older-than') + 1] ?? '30d').replace(/d$/, '')) || 30; console.log(`removed ${clean(d)} files older than ${d} days`); return; }
   if (cmd === 'replay') return replay(argv.slice(1));
   if (cmd === 'report') { const d = Number(String(argv[argv.indexOf('--days') + 1] ?? '30')) || 30; console.log(formatReport30(buildReport(d))); return; }

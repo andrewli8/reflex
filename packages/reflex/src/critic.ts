@@ -186,7 +186,8 @@ export class Reflex {
     const sameAs = this.actions.find((a, i) => i !== idx && a.resultHash === resultHash && a.resultDigest !== '');
     const flags = {
       error: Boolean(result.error) || /^(error|fatal|exception)\b/im.test(output.slice(0, 200)),
-      protected: isProtected(call, output),
+      // Read-class command output (grep, cat, find, ls) is dense: every line may be the one the agent needs. Trim only when huge.
+      protected: isProtected(call, output) || action.readOnly,
       identicalResult: Boolean(sameAs),
       repetitive: isRepetitive(output),
     };
