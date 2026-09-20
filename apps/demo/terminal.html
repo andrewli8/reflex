@@ -48,7 +48,8 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family
 .cap b{display:block;font:italic 400 24px/1.15 "Instrument Serif",serif;margin-bottom:6px}
 .cap p{margin:0;color:var(--dim);font-size:12px;line-height:1.5}
 .stages{display:flex;flex-direction:column;gap:3px}
-.st{display:grid;grid-template-columns:18px 1fr auto;gap:10px;align-items:center;font-size:12px;color:var(--dim);padding:5px 8px;border-radius:6px;white-space:nowrap;transition:background .2s,color .2s}
+.st{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:10px;align-items:center;font-size:12px;color:var(--dim);padding:5px 8px;border-radius:6px;white-space:nowrap;transition:background .2s,color .2s}
+.st>span:first-of-type{overflow:hidden;text-overflow:ellipsis}
 .st i{width:8px;height:8px;border-radius:50%;background:var(--line);justify-self:center}
 .st.on{background:var(--soft);color:var(--ink)}.st.on i{background:var(--acc);box-shadow:0 0 0 4px rgba(255,74,28,.16)}
 .st.jev.on{background:#eef2ff}.st.jev.on i{background:var(--jev);box-shadow:0 0 0 4px rgba(47,92,255,.16)}
@@ -101,7 +102,7 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family
         <h3><i>Reflex</i> pipeline, per call</h3>
         <div class="stages">
           <div class="st" data-s="hook"><i></i><span>hook fires, tool waits</span><span class="ms"></span></div>
-          <div class="st" data-s="script"><i></i><span>destructive patterns, inside scripts too</span><span class="ms"></span></div>
+          <div class="st" data-s="script"><i></i><span>destructive patterns, in scripts too</span><span class="ms"></span></div>
           <div class="st" data-s="dedupe"><i></i><span>duplicate · loop · polling</span><span class="ms"></span></div>
           <div class="st jev" data-s="jev"><i></i><span>Jev: 3 yes/no questions, 1 round trip</span><span class="ms"></span></div>
           <div class="st" data-s="policy"><i></i><span>decide</span><span class="ms"></span></div>
