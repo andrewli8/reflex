@@ -99,16 +99,44 @@ describe('codex host', () => {
   });
 });
 
+describe('PreCompact', () => {
+  it('resets the gauge window at compaction', async () => {
+    for (let i = 0; i < 3; i++) {
+      await handleHook(base({ hook_event_name: 'PreToolUse', tool_use_id: `k${i}`, tool_name: 'Read', tool_input: { file_path: `f${i}.txt` } }));
+      await handleHook(base({ hook_event_name: 'PostToolUse', tool_use_id: `k${i}`, tool_name: 'Read', tool_input: { file_path: `f${i}.txt` }, tool_response: `token_${i} ` + 'x'.repeat(3000) }));
+    }
+    expect(await handleHook(base({ hook_event_name: 'PreCompact', trigger: 'auto' } as object))).toBeUndefined();
+    const log = readFileSync(join(home, 'sessions', 's1.jsonl'), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
+    expect(log.at(-1)).toMatchObject({ phase: 'compact' });
+    const { Reflex } = await import('../src/critic.js');
+    expect(new Reflex({ cwd, history: log }).deadWeight().results).toBe(0);
+  });
+});
+
 describe('init', () => {
   it('adds four hooks once, keeps existing settings, and is idempotent', () => {
     mkdirSync(join(cwd, '.claude'));
     writeFileSync(join(cwd, '.claude', 'settings.json'), '{"permissions":{"allow":["Bash(ls)"]}}');
     const a = init(cwd, 'node /x/hook.js');
     const b = init(cwd, 'node /x/hook.js');
-    expect(a.added).toHaveLength(6);
+    expect(a.added).toHaveLength(7);
     expect(b.added).toHaveLength(0);
     const s = JSON.parse(readFileSync(a.path, 'utf8'));
     expect(s.hooks.PreToolUse[0].hooks[0]).toMatchObject({ type: 'command', command: 'node /x/hook.js', timeout: 3 });
     expect(s.permissions.allow).toEqual(['Bash(ls)']);
+  });
+});
+
+describe('secrets and shim', () => {
+  it('stores and reads a key with 0600 and writes an executable shim', async () => {
+    const { readSecret, writeSecret } = await import('../src/session.js');
+    const { writeShim } = await import('../src/cli.js');
+    const { statSync, readFileSync: rf } = await import('node:fs');
+    const p = writeSecret('TYPESAFE_API_KEY', 'k123');
+    expect((statSync(p).mode & 0o777)).toBe(0o600);
+    expect(readSecret('TYPESAFE_API_KEY')).toBe('k123');
+    const shim = writeShim();
+    expect(statSync(shim).mode & 0o111).toBeTruthy();
+    expect(rf(shim, 'utf8')).toContain('hook-bin.js');
   });
 });

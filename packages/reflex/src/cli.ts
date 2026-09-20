@@ -10,12 +10,14 @@ import { loadConfig } from './config-file.js';
 import { daemonProvider, providerFromConfig } from './providers/index.js';
 import { computeStats, formatStats, loadAllLogs } from './stats.js';
 import { buildReport, formatReport30 } from './report.js';
-import { appendEvent, readTail, reflexHome, sessionsDir } from './session.js';
+import { appendEvent, readSecret, readTail, reflexHome, sessionsDir, writeSecret } from './session.js';
+import { execSync } from 'node:child_process';
+import { chmodSync } from 'node:fs';
 import { basename } from 'node:path';
 import { readDaemonInfo, serve, socketPath } from './serve.js';
 import type { ReflexEvent } from './critic.js';
 
-const EVENTS = ['PreToolUse', 'PostToolUse', 'PostToolUseFailure', 'PermissionRequest', 'UserPromptSubmit', 'SessionStart'] as const;
+const EVENTS = ['PreToolUse', 'PostToolUse', 'PostToolUseFailure', 'PermissionRequest', 'UserPromptSubmit', 'SessionStart', 'PreCompact'] as const;
 
 /** Write the four Reflex hooks into <cwd>/.claude/settings.json, keeping everything already there. Idempotent. */
 export function init(cwd: string, hookCommand = defaultHookCommand()): { path: string; added: string[]; command: string } {
@@ -36,11 +38,33 @@ export function init(cwd: string, hookCommand = defaultHookCommand()): { path: s
   return { path, added, command: hookCommand };
 }
 
-/** `reflex-hook` from a global install if it is on PATH (survives upgrades); otherwise the absolute path of this build. */
-function defaultHookCommand(host: 'claude-code' | 'codex' = 'claude-code'): string {
-  const onPath = (process.env['PATH'] ?? '').split(':').some((d) => existsSync(join(d, 'reflex-hook')));
+/**
+ * A stable shim at ~/.reflex/bin/reflex-hook that finds the newest install at run time, so hooks survive
+ * upgrades and npx installs: PATH binary, then the global npm root, then the build that ran `init`.
+ */
+export function writeShim(home = reflexHome()): string {
+  const dir = join(home, 'bin');
+  mkdirSync(dir, { recursive: true });
   const here = dirname(fileURLToPath(import.meta.url));
-  const base = onPath ? 'reflex-hook' : `node ${JSON.stringify(join(here, 'hook-bin.js'))}`;
+  let globalRoot = '';
+  try { globalRoot = execSync('npm root -g', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(); } catch { /* no npm */ }
+  const candidates = [globalRoot && join(globalRoot, 'agent-reflex', 'dist', 'hook-bin.js'), join(here, 'hook-bin.js')].filter(Boolean);
+  const shim = [
+    '#!/bin/sh',
+    '# Reflex hook shim, written by `reflex init`. Tries a global install first so upgrades take effect without re-running init.',
+    'if command -v reflex-hook >/dev/null 2>&1 && [ "$(command -v reflex-hook)" != "$0" ]; then exec reflex-hook "$@"; fi',
+    ...candidates.map((c) => `if [ -f "${c}" ]; then exec node "${c}" "$@"; fi`),
+    'exit 0',
+    '',
+  ].join('\n');
+  const path = join(dir, 'reflex-hook');
+  writeFileSync(path, shim);
+  chmodSync(path, 0o755);
+  return path;
+}
+
+function defaultHookCommand(host: 'claude-code' | 'codex' = 'claude-code'): string {
+  const base = process.platform === 'win32' ? `node ${JSON.stringify(join(dirname(fileURLToPath(import.meta.url)), 'hook-bin.js'))}` : writeShim();
   return host === 'codex' ? `${base} --codex` : base;
 }
 
@@ -145,6 +169,7 @@ function doctor(): void {
     `node       ${process.version}`,
     `home       ${reflexHome()}`,
     `config     mode=${cfg.mode} provider=${cfg.provider ?? 'none'}`,
+    `keys       jev ${readSecret('TYPESAFE_API_KEY') ? 'ok' : 'missing (reflex key jev <key>)'}   llm ${readSecret('ANTHROPIC_API_KEY') ? 'ok' : 'missing'}`,
     `socket     ${socketPath()} ${existsSync(socketPath()) ? '(exists)' : '(absent)'}`,
     `daemon     ${info ? `pid ${info.pid} provider ${info.provider} ${alive ? 'alive' : 'DEAD (stale daemon.json)'}` : 'not running'}`,
     `logs       ${newestLog() ?? 'none'}`,
@@ -188,10 +213,28 @@ async function main(argv: string[]): Promise<void> {
       if (!argv.includes('--all')) return;
     }
     const r = init(root);
-    console.log(r.added.length ? `Reflex hooks added to ${r.path} (${r.added.join(', ')}). Command: ${r.command}. Mode: nudge. Reflex advises Claude Code's permission system; it is not a security boundary.${r.command.startsWith('node ') ? ' Install globally (npm i -g agent-reflex) so the hook survives upgrades.' : ''}` : `Reflex hooks already present in ${r.path}.`);
+    console.log(r.added.length ? `Reflex hooks added to ${r.path} (${r.added.join(', ')}). Command: ${r.command}. Mode: nudge. Reflex advises Claude Code's permission system; it is not a security boundary.` : `Reflex hooks already present in ${r.path}.`);
+    if (!argv.includes('--no-report')) {
+      // First-run moment: show what Reflex would have done on the user's own history, then the near-miss report.
+      const paths = findTranscripts().slice(0, 20);
+      if (paths.length) {
+        console.log(`\nReplaying your last ${paths.length} Claude Code sessions in shadow mode (deterministic, no model)...`);
+        await replay(['--last', String(paths.length), '--import', '--provider', 'none']);
+        console.log('\n' + formatReport30(buildReport(3650)));
+        console.log('\nRe-run any time with: reflex report');
+      }
+    }
     return;
   }
-  console.log('usage: reflex init [--global] [--codex|--all] | replay [--last N] [--provider none|laya|jev|llm] [--import] [file.jsonl ...] | report [--days 30] | stats | watch | doctor | clean [--older-than 30d] | serve [--provider laya] [--idle MIN]');
+  if (cmd === 'key') {
+    const [provider, value] = [argv[1], argv[2]];
+    const names: Record<string, string> = { jev: 'TYPESAFE_API_KEY', typesafe: 'TYPESAFE_API_KEY', llm: 'ANTHROPIC_API_KEY', anthropic: 'ANTHROPIC_API_KEY' };
+    const name = provider ? names[provider] : undefined;
+    if (!name || !value) { console.log('usage: reflex key <jev|llm> <api-key>   (stored in ~/.reflex/secrets.json, mode 600)'); process.exitCode = 1; return; }
+    console.log(`stored ${name} in ${writeSecret(name, value)}`);
+    return;
+  }
+  console.log('usage: reflex init [--global] [--codex|--all] [--no-report] | key <jev|llm> <api-key> | replay [--last N] [--provider none|laya|jev|llm] [--import] [file.jsonl ...] | report [--days 30] | stats | watch | doctor | clean [--older-than 30d] | serve [--provider laya] [--idle MIN]');
   process.exitCode = 1;
 }
 

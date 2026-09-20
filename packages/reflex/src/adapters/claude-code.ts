@@ -49,6 +49,7 @@ async function handle(input: HookInput, host: Host): Promise<HookOutput> {
   const history = readTail(path);
   if (input.hook_event_name === 'UserPromptSubmit') return promptSubmitted(input, history, path);
   if (input.hook_event_name === 'SessionStart') return sessionStart(input, history, config.ledger.enabled);
+  if (input.hook_event_name === 'PreCompact') { new Reflex({ cwd, history, log: (e) => appendEvent(path, e) }).compacted(); return undefined; }
   const call = toCall(input);
   if (!call) return undefined;
 

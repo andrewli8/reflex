@@ -15,7 +15,7 @@ export interface ToolResult { output: string; error?: boolean }
 
 export interface ReflexEvent {
   ts: number; step: number; toolUseId: string; tool: string; class: string; summary: string;
-  phase: 'pre' | 'post' | 'permission' | 'meta'; policy: PolicyKind | PostPolicyDecision['kind']; applied: Applied | PostPolicyDecision['kind'];
+  phase: 'pre' | 'post' | 'permission' | 'meta' | 'compact'; policy: PolicyKind | PostPolicyDecision['kind']; applied: Applied | PostPolicyDecision['kind'];
   /** Pre events carry the normalized action so a session log can be folded back into state. */
   action?: Action; outcome?: Action['outcome']; resultDigest?: string; resultHash?: string; goal?: string;
   /** Post events: identifiers that first appeared in this result (capped). Pre events: steps whose results this call referenced. */
@@ -263,11 +263,24 @@ export class Reflex {
     return out;
   }
 
-  /** Bytes admitted by results no later call has referenced yet. */
+  /** Step of the last compaction; results before it are no longer in context and do not count as dead weight. */
+  private lastCompactStep(): number {
+    return [...this.events].reverse().find((e) => e.phase === 'compact')?.step ?? -1;
+  }
+
+  /** Record a compaction: the gauge restarts from here and the ledger marks what predates it. */
+  compacted(): void {
+    const event: ReflexEvent = { ts: this.now(), step: this.actions.length, toolUseId: '', tool: '', class: '', summary: 'compact', phase: 'compact', policy: 'keep', applied: 'keep', source: 'deterministic' };
+    this.events = [...this.events, event];
+    this.log(event);
+  }
+
+  /** Bytes admitted since the last compaction by results no later call has referenced yet. */
   deadWeight(): { bytes: number; results: number; total: number } {
     let bytes = 0; let results = 0; let total = 0;
+    const since = this.lastCompactStep();
     for (const e of this.events) {
-      if (e.phase !== 'post') continue;
+      if (e.phase !== 'post' || e.step <= since) continue;
       const b = e.bytesOut ?? e.bytesIn ?? 0; total += b;
       if (!this.referenced.has(e.step) && e.step < this.actions.length - 3) { bytes += b; results++; }
     }
@@ -278,7 +291,7 @@ export class Reflex {
   private contextGauge(): string | undefined {
     const g = this.config.gauge;
     if (!g.enabled) return undefined;
-    const lastAt = [...this.events].reverse().find((e) => e.userMessage)?.step ?? -Infinity;
+    const lastAt = [...this.events].reverse().find((e) => e.userMessage || e.phase === 'compact')?.step ?? -Infinity;
     if (this.actions.length - lastAt < g.everySteps) return undefined;
     const d = this.deadWeight();
     if (d.bytes < g.minBytes) return undefined;

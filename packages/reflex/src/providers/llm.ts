@@ -1,4 +1,5 @@
 import type { Answer, Answers, Provider, Question } from '../provider.js';
+import { readSecret } from '../session.js';
 
 /**
  * LLM baseline critic: the same questions, answered by a generative model through one strict tool call.
@@ -41,7 +42,8 @@ export function llmProvider(o: LlmOptions = {}): Provider {
     maxStateTokens: o.maxStateTokens ?? 8000,
     async decide<Q extends Record<string, Question>>(state: string, questions: Q, opts?: { signal?: AbortSignal }): Promise<Answers<Q>> {
       const { default: Anthropic } = await import('@anthropic-ai/sdk');
-      const client = new Anthropic();
+      const apiKey = readSecret('ANTHROPIC_API_KEY');
+      const client = new Anthropic(apiKey ? { apiKey } : {});
       const res = await client.messages.create({
         model, max_tokens: 512,
         system: 'You are a fast critic inside an agent tool loop. Answer every question with a calibrated probability. Do not explain.',

@@ -1,4 +1,5 @@
 import type { Answer, Answers, Provider, Question } from '../provider.js';
+import { readSecret } from '../session.js';
 
 /**
  * TypeSafe Jev over HTTP. Request/response shape follows the published SDK examples;
@@ -27,7 +28,7 @@ export function fromJev(q: Question, a: JevAnswer | undefined): Answer {
 }
 
 export function jevProvider(o: JevOptions = {}): Provider {
-  const apiKey = o.apiKey ?? process.env['TYPESAFE_API_KEY'] ?? '';
+  const apiKey = o.apiKey ?? readSecret('TYPESAFE_API_KEY') ?? '';
   const baseUrl = (o.baseUrl ?? process.env['TYPESAFE_BASE_URL'] ?? 'https://api.typesafe.ai').replace(/\/$/, '');
   const model = o.model ?? process.env['TYPESAFE_MODEL'] ?? 'jev-latest';
   const f = o.fetch ?? fetch;

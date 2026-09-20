@@ -1,4 +1,4 @@
-import { appendFileSync, mkdirSync, openSync, readSync, closeSync, statSync } from 'node:fs';
+import { appendFileSync, chmodSync, mkdirSync, openSync, readFileSync, readSync, closeSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import type { ReflexEvent } from './critic.js';
@@ -43,4 +43,19 @@ export function readTail(path: string, bytes = 64 * 1024): ReflexEvent[] {
     for (const line of text.split('\n')) parse(line);
     return out;
   } finally { closeSync(fd); }
+}
+
+/** Keys stored by `reflex key <provider> <value>`; hook processes often lack the user's shell env. */
+export function readSecret(name: string): string | undefined {
+  if (process.env[name]) return process.env[name];
+  try { return (JSON.parse(readFileSync(join(reflexHome(), 'secrets.json'), 'utf8')) as Record<string, string>)[name]; } catch { return undefined; }
+}
+export function writeSecret(name: string, value: string): string {
+  const path = join(reflexHome(), 'secrets.json');
+  mkdirSync(reflexHome(), { recursive: true });
+  let current: Record<string, string> = {};
+  try { current = JSON.parse(readFileSync(path, 'utf8')); } catch { /* new */ }
+  writeFileSync(path, JSON.stringify({ ...current, [name]: value }, null, 2) + '\n', { mode: 0o600 });
+  try { chmodSync(path, 0o600); } catch { /* best effort */ }
+  return path;
 }
