@@ -37,7 +37,7 @@ const IGNORED_KEYS = new Set(['description', 'reason', 'timeout', 'run_in_backgr
 // Descriptive uses ("agents do not only need reasoning", "this must be why") are excluded.
 const CONSTRAINT_RE = /^(?:please\s+)?(?:do not|don't|never|always|only|avoid|must not|keep|without)\b|[,;]\s*(?:but\s+|and\s+|also\s+|then\s+)?(?:do not|don't|never)\b|\bmust (?:not|keep|stay|remain|use)\b|\b(?:and|but|also|please)\s+never\b/i;
 // Descriptive prose, transcribed speech, code and shouting are not instructions.
-const NOT_CONSTRAINT_RE = /\bnot only\b|\bdo not (?:only|need|have|know|think|seem|want)\b|`|—|\b(?:I|I've|I'm|we've|they|it'll|you know|unfortunately|because)\b.*\b(?:never|don't|do not)\b/i;
+const NOT_CONSTRAINT_RE = /\?\s*$|\bonly (?:thing|issue|question|problem|concern|if|when|because)\b|\bnot only\b|\bdo not (?:only|need|have|know|think|seem|want)\b|`|—|\b(?:I|I've|I'm|we've|they|it'll|you know|unfortunately|because)\b.*\b(?:never|don't|do not)\b/i;
 const SHOUTING_RE = /^[^a-z]*$/; // case-sensitive: no lowercase letter at all
 
 /**

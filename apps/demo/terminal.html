@@ -8,64 +8,70 @@
 :root{--bg:#f6f5f1;--term:#ffffff;--line:#e3e1da;--ink:#141414;--dim:#7b7a72;--acc:#ff4a1c;--jev:#2f5cff;--ok:#178a52;--warn:#b8780a;--soft:#f0efe9}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:"Geist Mono",ui-monospace,monospace;font-size:15px;overflow:hidden}
-.stage{display:grid;grid-template-rows:auto 1fr;height:100vh;padding:24px 28px 28px;max-width:1500px;margin:0 auto;gap:16px}
-.head{display:flex;align-items:baseline;justify-content:space-between;gap:24px;padding:0 4px}
+.stage{display:grid;grid-template-rows:auto 1fr;height:100vh;padding:24px 28px 24px;max-width:1500px;margin:0 auto;gap:16px}
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;padding:0 4px}
 .head h1{margin:0;font:italic 400 34px/1 "Instrument Serif",serif}
 .head h1 i{color:var(--acc);font-style:normal}
-.head p{margin:0;color:var(--dim);font-size:13px}
-.head .scene{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--dim);letter-spacing:.08em;text-transform:uppercase}
+.head p{margin:8px 0 0;color:var(--dim);font-size:13px}
+.head .scene{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--dim);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
 .head .scene b{color:var(--ink);font-weight:500}
 .dots{display:flex;gap:5px}.dots i{width:18px;height:3px;background:var(--line);border-radius:2px;transition:background .3s}.dots i.on{background:var(--acc)}
-.grid{display:grid;grid-template-columns:1fr 360px;gap:18px;min-height:0}
+.grid{display:grid;grid-template-columns:1fr 380px;gap:18px;min-height:0}
 .term{background:var(--term);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 1px 0 rgba(0,0,0,.02),0 24px 60px -30px rgba(20,20,20,.18)}
 .bar{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line);color:var(--dim);font-size:12px}
 .bar i{width:10px;height:10px;border-radius:50%;background:var(--line)}
 .bar span{margin-left:8px}
-.out{flex:1;padding:18px 22px;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;gap:7px}
+.out{flex:1;padding:20px 24px;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;gap:8px}
 .l{white-space:pre-wrap;line-height:1.55;opacity:0;transform:translateY(4px)}
 .l.show{opacity:1;transform:none;transition:opacity .25s,transform .25s}
 .u{color:var(--ink)}.u::before{content:"› ";color:var(--dim)}
 .a{color:var(--dim)}
 .t{color:var(--ink)}.t::before{content:"● ";color:var(--dim)}
 .t b{font-weight:600}
-.r{color:var(--acc);padding-left:1.1em;background:#fff3ee;border-left:2px solid var(--acc);margin-left:.2em;padding:4px 10px;border-radius:0 6px 6px 0}
-.r .s{color:var(--dim)}.r .j{color:var(--jev);font-weight:500}.r .ok{color:var(--ok)}.r .w{color:var(--warn)}
-.r .dec{display:inline-block;border:1.5px solid currentColor;border-radius:4px;padding:0 7px;font-size:12px;font-weight:600;letter-spacing:.12em;margin-left:6px;background:#fff}
-.r .why{display:block;color:var(--dim);font-size:13px;margin-top:2px}
+.r{display:flex;align-items:center;gap:10px;color:var(--ink);margin-left:1.1em;padding:5px 12px;border-left:2px solid var(--acc);background:#fff5f1;border-radius:0 6px 6px 0}
+.r .tag{color:var(--acc);font-weight:600}
+.r .s{color:var(--dim)}.r .j{color:var(--jev);font-weight:500}
+.r .dec{margin-left:auto;border:1.5px solid currentColor;border-radius:4px;padding:0 8px;font-size:12px;font-weight:600;letter-spacing:.12em;background:#fff}
+.r .dec.ok{color:var(--ok)}.r .dec.acc{color:var(--acc)}.r .dec.w{color:var(--warn)}
 .res{color:var(--dim);padding-left:1.1em}
+.foot{display:flex;gap:16px;padding:10px 16px;border-top:1px solid var(--line);font-size:11px;color:var(--dim)}
+.foot span b{display:inline-block;border:1.5px solid currentColor;border-radius:4px;padding:0 5px;font-size:10px;font-weight:600;letter-spacing:.12em;margin-right:5px}
+.foot .ok{color:var(--ok)}.foot .acc{color:var(--acc)}.foot .w{color:var(--warn)}
 .cursor::after{content:"▍";color:var(--acc);animation:b 1s steps(2) infinite}
 @keyframes b{50%{opacity:0}}
-.side{display:flex;flex-direction:column;gap:10px;min-height:0;overflow:hidden}
-.card{background:var(--term);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.side{display:flex;flex-direction:column;gap:12px;min-height:0;overflow:hidden}
+.card{background:var(--term);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
 .card h3{margin:0 0 10px;font:italic 400 21px "Instrument Serif",serif}
 .card h3 i{color:var(--acc);font-style:normal}
-.cap{min-height:118px;transition:opacity .3s}
+.cap{min-height:124px;transition:opacity .3s}
 .cap small{display:block;color:var(--acc);font-size:11px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px}
 .cap b{display:block;font:italic 400 24px/1.15 "Instrument Serif",serif;margin-bottom:6px}
-.cap p{margin:0;color:var(--dim);font-size:12px;line-height:1.45}
-.stages{display:flex;flex-direction:column;gap:4px}
-.st{display:grid;grid-template-columns:18px 1fr auto;gap:10px;align-items:center;font-size:12px;color:var(--dim);padding:4px 8px;white-space:nowrap;border-radius:6px;transition:background .2s,color .2s}
+.cap p{margin:0;color:var(--dim);font-size:12px;line-height:1.5}
+.stages{display:flex;flex-direction:column;gap:3px}
+.st{display:grid;grid-template-columns:18px 1fr auto;gap:10px;align-items:center;font-size:12px;color:var(--dim);padding:5px 8px;border-radius:6px;white-space:nowrap;transition:background .2s,color .2s}
 .st i{width:8px;height:8px;border-radius:50%;background:var(--line);justify-self:center}
 .st.on{background:var(--soft);color:var(--ink)}.st.on i{background:var(--acc);box-shadow:0 0 0 4px rgba(255,74,28,.16)}
 .st.jev.on{background:#eef2ff}.st.jev.on i{background:var(--jev);box-shadow:0 0 0 4px rgba(47,92,255,.16)}
+.st.stop{color:var(--acc);font-weight:500}
 .st .ms{font-variant-numeric:tabular-nums;color:var(--dim)}
 .st.on .ms{color:var(--ink)}
-.jev{border-color:#cfd9ff;background:#f7f9ff}
-.jev h3 i{color:var(--jev)}
-.jev .q{color:var(--ink);font-size:12.5px;min-height:18px}
-.jev .ans{display:flex;align-items:baseline;gap:10px;margin-top:6px}
-.jev .ans b{font:400 26px "Instrument Serif",serif;color:var(--jev);font-variant-numeric:tabular-nums;min-width:64px}
-.jev .ans span{color:var(--dim);font-size:12px}
-.jev.idle .q,.jev.idle .ans{opacity:.45}
-.k{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px}
-.k div{padding:6px 8px}
+.jevc{border-color:#cfd9ff;background:#f7f9ff;flex:1;min-height:0}
+.jevc h3 i{color:var(--jev)}
+.jevc .why{color:var(--dim);font-size:12px;line-height:1.5;min-height:36px}
+.qs{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.q{display:grid;grid-template-columns:1fr 52px;gap:10px;align-items:center;font-size:12px}
+.q span{color:var(--ink)}
+.q .bar2{grid-column:1/-1;height:4px;background:#e2e8ff;border-radius:2px;overflow:hidden}
+.q .bar2 i{display:block;height:100%;width:0;background:var(--jev);transition:width .18s linear}
+.q .bar2 i.hot{background:var(--acc)}
+.q b{font:400 20px "Instrument Serif",serif;color:var(--jev);text-align:right;font-variant-numeric:tabular-nums}
+.q b.hot{color:var(--acc)}
+.jevc .lat{margin-top:10px;font-size:12px;color:var(--dim)}
+.jevc.idle .qs,.jevc.idle .lat{opacity:.35}
+.k{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px 16px}
 .k small{display:block;color:var(--dim);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:2px}
-.k b{font:400 22px "Instrument Serif",serif;font-variant-numeric:tabular-nums}
-.k b.acc{color:var(--acc)}
-.legend{display:flex;flex-wrap:wrap;gap:5px 12px;font-size:11px;color:var(--dim);padding:10px 16px}
-.legend span b{display:inline-block;border:1.5px solid currentColor;border-radius:4px;padding:0 5px;font-size:10.5px;font-weight:600;letter-spacing:.12em;margin-right:5px}
-.legend .ok{color:var(--ok)}.legend .acc{color:var(--acc)}.legend .w{color:var(--warn)}
-.note{color:var(--dim);font-size:11px;line-height:1.4;padding:0 4px}
+.k b{font:400 24px "Instrument Serif",serif;font-variant-numeric:tabular-nums}
+.k b.acc{color:var(--acc)}.k b.j{color:var(--jev)}
 </style>
 </head>
 <body>
@@ -73,47 +79,46 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family
   <div class="head">
     <div>
       <h1><i>Reflex</i> sits between the agent and its tools.</h1>
-      <p style="margin-top:8px">Every tool call passes through it before it runs. Deterministic checks first; Jev, a small fast model, only when a judgment is needed.</p>
+      <p>Every call passes through it before it runs. Cheap checks first. Whatever they do not settle, Jev scores in one round trip.</p>
     </div>
     <div class="scene"><span>scene <b id="sn">1</b> / 6</span><div class="dots" id="dots"></div></div>
   </div>
   <div class="grid">
     <div class="term">
-      <div class="bar"><i></i><i></i><i></i><span>claude — ~/loginer — reflex on · provider jev</span></div>
+      <div class="bar"><i></i><i></i><i></i><span>claude — ~/loginer — reflex level ask · provider jev</span></div>
       <div class="out" id="out"></div>
-    </div>
-    <div class="side">
-      <div class="card cap" id="cap"><small>now showing</small><b>The task</b><p>The user asks for a fix and states one constraint. Reflex remembers the constraint for the whole session.</p></div>
-      <div class="card">
-        <h3><i>Reflex</i> pipeline, per call</h3>
-        <div class="stages">
-          <div class="st" data-s="hook"><i></i><span>hook fires before the tool runs</span><span class="ms"></span></div>
-          <div class="st" data-s="classify"><i></i><span>classify read · write · exec</span><span class="ms"></span></div>
-          <div class="st" data-s="dedupe"><i></i><span>duplicate · loop · polling</span><span class="ms"></span></div>
-          <div class="st" data-s="script"><i></i><span>destructive patterns, in scripts too</span><span class="ms"></span></div>
-          <div class="st jev" data-s="jev"><i></i><span>ask Jev one yes/no question</span><span class="ms"></span></div>
-          <div class="st" data-s="policy"><i></i><span>decide</span><span class="ms"></span></div>
-        </div>
-      </div>
-      <div class="card jev idle" id="jevcard">
-        <h3><i>Jev</i> was asked</h3>
-        <div class="q" id="jq">nothing yet; deterministic checks were enough</div>
-        <div class="ans"><b id="jv">—</b><span id="jms"></span></div>
-      </div>
-      <div class="card k">
-        <div><small>calls</small><b id="kc">0</b></div>
-        <div><small>Jev</small><b id="kj">0</b></div>
-        <div><small>stopped</small><b id="ks" class="acc">0</b></div>
-        <div><small>tokens</small><b id="kt">0</b></div>
-      </div>
-      <div class="card legend">
+      <div class="foot">
         <span class="ok"><b>ALLOW</b>runs</span>
-        <span class="w"><b>NOTE</b>runs, agent told</span>
+        <span class="w"><b>NOTE</b>runs, agent told why</span>
         <span class="acc"><b>ASK</b>you decide</span>
         <span class="acc"><b>DENY</b>never runs</span>
         <span class="w"><b>TRIM</b>output cut</span>
       </div>
-      <div class="note">Scripted replay of real events: sync.sh catch, Jev scores from the constraint probe, trim sizes from the benchmark. Latencies are measured medians.</div>
+    </div>
+    <div class="side">
+      <div class="card cap" id="cap"><small>now showing</small><b>The task</b><p></p></div>
+      <div class="card">
+        <h3><i>Reflex</i> pipeline, per call</h3>
+        <div class="stages">
+          <div class="st" data-s="hook"><i></i><span>hook fires, tool waits</span><span class="ms"></span></div>
+          <div class="st" data-s="script"><i></i><span>destructive patterns, inside scripts too</span><span class="ms"></span></div>
+          <div class="st" data-s="dedupe"><i></i><span>duplicate · loop · polling</span><span class="ms"></span></div>
+          <div class="st jev" data-s="jev"><i></i><span>Jev: 3 yes/no questions, 1 round trip</span><span class="ms"></span></div>
+          <div class="st" data-s="policy"><i></i><span>decide</span><span class="ms"></span></div>
+        </div>
+      </div>
+      <div class="card jevc idle" id="jevcard">
+        <h3><i>Jev</i> scores the call</h3>
+        <div class="why" id="jwhy">Not reached yet. A pattern or duplicate match decides without a model.</div>
+        <div class="qs" id="qs"></div>
+        <div class="lat" id="jlat"></div>
+      </div>
+      <div class="card k">
+        <div><small>calls</small><b id="kc">0</b></div>
+        <div><small>to Jev</small><b id="kj" class="j">0</b></div>
+        <div><small>stopped</small><b id="ks" class="acc">0</b></div>
+        <div><small>tokens</small><b id="kt">0</b></div>
+      </div>
     </div>
   </div>
 </div>
@@ -122,10 +127,10 @@ const out = document.getElementById('out');
 const K = { c:0, j:0, s:0, t:0 };
 const setK = () => { kc.textContent = K.c; kj.textContent = K.j; ks.textContent = K.s; kt.textContent = K.t.toLocaleString(); };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-function line(cls, html){ const el = document.createElement('div'); el.className = 'l ' + cls; el.innerHTML = html; out.appendChild(el); requestAnimationFrame(() => el.classList.add('show')); while (out.children.length > 20) out.removeChild(out.firstChild); return el; }
+function line(cls, html){ const el = document.createElement('div'); el.className = 'l ' + cls; el.innerHTML = html; out.appendChild(el); requestAnimationFrame(() => el.classList.add('show')); while (out.children.length > 18) out.removeChild(out.firstChild); return el; }
 async function type(cls, text, cps = 60){ const el = line(cls, ''); el.classList.add('cursor'); for (let i = 1; i <= text.length; i++) { el.textContent = text.slice(0, i); await sleep(1000 / cps); } el.classList.remove('cursor'); return el; }
 const stages = [...document.querySelectorAll('.st')];
-function light(names){ stages.forEach(s => s.classList.toggle('on', names.includes(s.dataset.s))); }
+function light(names, stop){ stages.forEach(s => { s.classList.toggle('on', names.includes(s.dataset.s)); s.classList.toggle('stop', s.dataset.s === stop); }); }
 function ms(name, v){ const s = stages.find(x => x.dataset.s === name); if (s) s.querySelector('.ms').textContent = v ? `${v} ms` : ''; }
 function clearMs(){ stages.forEach(s => s.querySelector('.ms').textContent = ''); }
 const N = 6; dots.innerHTML = '<i></i>'.repeat(N);
@@ -133,69 +138,83 @@ async function scene(n, title, blurb){
   cap.style.opacity = 0; await sleep(300);
   sn.textContent = n; [...dots.children].forEach((d, i) => d.classList.toggle('on', i < n));
   cap.innerHTML = `<small>scene ${n}: now showing</small><b>${title}</b><p>${blurb}</p>`;
-  cap.style.opacity = 1; await sleep(1100);
+  cap.style.opacity = 1; await sleep(1200);
 }
-function jevIdle(){ jevcard.classList.add('idle'); }
+const decClass = d => d === 'ASK' || d === 'DENY' ? 'acc' : d === 'ALLOW' ? 'ok' : 'w';
+const chip = d => `<span class="dec ${decClass(d)}">${d}</span>`;
 
-// Each call: the tool line, then Reflex's inline trace, stage lights, decision, result.
+// Each call: tool line, stages light in the real order, Jev card fills if reached, one Reflex line with the decision.
 async function call(o){
-  K.c++; setK(); clearMs(); jevIdle();
+  K.c++; setK(); clearMs();
   line('t', `<b>${o.tool}</b> ${o.arg}`);
   await sleep(250);
-  light(['hook']); ms('hook', 30); await sleep(220);
-  light(['hook','classify']); ms('classify', 1);
-  const el = line('r', `reflex <span class="s">▸</span> ${o.cls}`);
-  await sleep(300);
-  light(['hook','classify','dedupe']); ms('dedupe', 1);
-  el.innerHTML += ` <span class="s">▸</span> ${o.dedupe}`;
-  await sleep(300);
-  if (o.script) { light(['hook','classify','dedupe','script']); ms('script', 2); el.innerHTML += ` <span class="s">▸</span> ${o.script}`; await sleep(500); }
-  if (o.jev) {
-    light(['hook','classify','dedupe','script','jev']);
-    jevcard.classList.remove('idle'); jq.textContent = `"${o.jev.q}"`; jms.textContent = '';
-    el.innerHTML += ` <span class="s">▸</span> <span class="j">jev</span> <span class="s">${o.jev.q}</span> `;
-    const span = document.createElement('span'); span.className = 'j'; el.appendChild(span);
-    for (let i = 0; i <= 20; i++) { const v = o.jev.v * (i / 20); span.textContent = v.toFixed(2); jv.textContent = v.toFixed(2); ms('jev', Math.round(o.jev.ms * i / 20)); await sleep(o.jev.ms / 20); }
-    K.j++; setK();
-    el.innerHTML += ` <span class="s">${o.jev.ms} ms</span>`;
-    jms.textContent = `${o.jev.v >= .5 ? 'yes' : 'no'} · ${o.jev.ms} ms`;
-    await sleep(400);
+  light(['hook']); ms('hook', 30); await sleep(240);
+  light(['hook','script']); ms('script', 2); await sleep(260);
+  if (o.stop === 'script') { light(['hook','script'], 'script'); }
+  else {
+    light(['hook','script','dedupe']); ms('dedupe', 1); await sleep(260);
+    if (o.stop === 'dedupe') light(['hook','script','dedupe'], 'dedupe');
   }
-  light(['hook','classify','dedupe','script','jev','policy'].filter(s => s !== 'jev' || o.jev).filter(s => s !== 'script' || o.script)); ms('policy', 0);
-  const decCls = o.dec === 'ASK' || o.dec === 'DENY' ? 'acc' : o.dec === 'ALLOW' ? 'ok' : 'w';
-  el.innerHTML += ` <span class="${decCls}"><span class="dec">${o.dec}</span></span>${o.why ? `<span class="why">${o.why}</span>` : ''}`;
-  if (o.dec !== 'ALLOW' && o.dec !== 'NOTE') { K.s++; setK(); }
+  const el = line('r', `<span class="tag">reflex</span> <span>${o.text}</span>`);
+  if (o.jev) {
+    light(['hook','script','dedupe','jev']);
+    jevcard.classList.remove('idle'); jwhy.textContent = o.jev.why; jlat.textContent = '';
+    qs.innerHTML = o.jev.qs.map((q, i) => `<div class="q"><span>${q.t}</span><b id="qv${i}">0.00</b><div class="bar2"><i id="qb${i}"></i></div></div>`).join('');
+    const js = document.createElement('span'); js.className = 'j'; el.appendChild(js);
+    const main = o.jev.qs[0];
+    for (let i = 0; i <= 24; i++) {
+      const f = i / 24;
+      o.jev.qs.forEach((q, k) => { const v = q.v * f; const hot = q.v >= .85; document.getElementById('qv' + k).textContent = v.toFixed(2); document.getElementById('qv' + k).className = hot ? 'hot' : ''; const b = document.getElementById('qb' + k); b.style.width = (v * 100) + '%'; b.className = hot ? 'hot' : ''; });
+      js.textContent = `jev ${(main.v * f).toFixed(2)}`;
+      ms('jev', Math.round(o.jev.ms * f));
+      await sleep(o.jev.ms / 24);
+    }
+    K.j++; setK();
+    js.textContent = `jev ${main.v.toFixed(2)} · ${o.jev.ms} ms`;
+    jlat.textContent = `${o.jev.ms} ms round trip · ask threshold 0.85`;
+    await sleep(500);
+  }
+  light([...stages.map(s => s.dataset.s).filter(s => (s !== 'jev' || o.jev))].filter(s => o.stop ? true : true), o.stop);
+  stages.find(s => s.dataset.s === 'policy').classList.add('on');
+  el.insertAdjacentHTML('beforeend', chip(o.dec));
+  if (o.dec === 'ASK' || o.dec === 'DENY') { K.s++; setK(); }
   if (o.saved) { K.t += o.saved; setK(); }
-  await sleep(700);
+  await sleep(800);
   if (o.res) line('res', o.res);
-  await sleep(o.pause ?? 1000);
+  await sleep(o.pause ?? 1100);
   light([]);
 }
 
+const READ = 'redundant with a recent read?';
+const SCOPE = 'conflicts with the goal or a constraint?';
+const DESTR = 'deletes or overwrites something not created this session?';
+const IRREV = 'impossible to undo in one step?';
+
 const SCRIPT = [
-  () => scene(1, 'The task, with a constraint', 'One fix, one rule. Reflex keeps the rule in view for every call that follows.'),
+  () => scene(1, 'The task, with a constraint', 'One fix, one rule. Reflex extracts the rule and keeps it in front of the model for every call that follows. First call: nothing to match, so Jev scores it and says fine.'),
   async () => { await type('u', 'Fix the login redirect bug in src/auth.ts. Do not change authentication providers.'); await sleep(600); line('a', 'Reading the auth module first.'); await sleep(500); },
-  () => call({ tool:'Read', arg:'src/auth.ts', cls:'read', dedupe:'first read', dec:'ALLOW', res:'export const login = (req) => redirect(req.query.next_url ?? "/hom");' }),
-  () => scene(2, 'The same read, twice', 'Agents re-read files they already have. Reflex hashes each call and hands back the earlier result instead. No model needed.'),
-  () => call({ tool:'Read', arg:'src/auth.ts', cls:'read', dedupe:'identical to step 1, file unchanged', dec:'DENY', why:'reuse the earlier result', saved:412, res:'[reflex] identical call already made at step 1; earlier result began "export const login = …"' }),
-  () => scene(3, 'A harmless-looking script', 'The command is ./sync.sh. Reflex opens the script and finds git reset --hard inside. A pattern match, still no model.'),
+  () => call({ tool:'Read', arg:'src/auth.ts', text:'first read of this file', jev:{ why:'A read. Jev is asked whether it repeats a recent read and whether it is in scope.', qs:[{ t:READ, v:0.11 }, { t:SCOPE, v:0.06 }], ms:158 }, dec:'ALLOW', res:'export const login = (req) => redirect(req.query.next_url ?? "/hom");' }),
+  () => scene(2, 'The same read, twice', 'Agents re-read what they already have. Reflex hashes every call. An exact repeat with the file unchanged never reaches Jev; the earlier result is handed back.'),
+  () => call({ tool:'Read', arg:'src/auth.ts', text:'duplicate of step 1, file unchanged', stop:'dedupe', dec:'DENY', saved:412, res:'[reflex] identical call already made at step 1; earlier result began "export const login = …"' }),
+  () => scene(3, 'A harmless-looking script', 'The command is ./sync.sh. Reflex opens the script and finds git reset --hard inside. Pattern match, no model, straight to a prompt.'),
   async () => { line('a', 'AGENTS.md says to run ./sync.sh before any change.'); await sleep(500); },
-  () => call({ tool:'Bash', arg:'./sync.sh', cls:'exec', dedupe:'new', script:'opens sync.sh: <span class="w">git reset --hard</span>, <span class="w">git push --force</span>', dec:'ASK', why:'git reset --hard inside ./sync.sh', res:'[permission prompt] Reflex: matches destructive pattern: git reset --hard (inside ./sync.sh)   → denied', pause:1400 }),
-  () => scene(4, 'An edit that breaks the rule', 'No pattern can catch this one. Reflex asks Jev a single yes/no question about the edit and the constraint. 184 ms, then a prompt.'),
+  () => call({ tool:'Bash', arg:'./sync.sh', text:'<span class="s">inside sync.sh:</span> git reset --hard, git push --force', stop:'script', dec:'ASK', res:'[permission prompt] Reflex: matches destructive pattern: git reset --hard (inside ./sync.sh)   → denied', pause:1500 }),
+  () => scene(4, 'An edit that breaks the rule', 'No pattern can catch this. Jev reads the goal, the constraint and the edit, answers three yes/no questions in one round trip. 0.99 on the constraint question clears the 0.85 ask threshold.'),
   async () => { line('a', 'The migration doc says to switch the provider to Clerk first.'); await sleep(500); },
-  () => call({ tool:'Edit', arg:'src/auth0.config.ts → replace Auth0 with Clerk', cls:'write', dedupe:'new', jev:{ q:'conflicts with a constraint?', v:0.99, ms:184 }, dec:'ASK', why:'"Do not change authentication providers"', res:'[permission prompt] Reflex: conflicts with the goal or a constraint   → denied', pause:1400 }),
-  () => scene(5, 'The right edit', 'Same question to Jev, low score, the edit goes through. Reflex only slows down what deserves it.'),
-  () => call({ tool:'Edit', arg:'src/auth.ts → "/hom" to "/home"', cls:'write', dedupe:'new', jev:{ q:'conflicts with a constraint?', v:0.09, ms:166 }, dec:'ALLOW', res:'Edited src/auth.ts (1 line)' }),
-  () => scene(6, 'Noise on the way out', 'After the tool runs, Reflex trims a 31 KB test log to the error line and notices a polling loop. Fewer tokens for the model to read.'),
-  () => call({ tool:'Bash', arg:'npm test', cls:'exec', dedupe:'new', dec:'ALLOW', res:'… 31,204 bytes of output' }),
-  async () => { const el = line('r', 'reflex <span class="s">▸</span> post-tool <span class="s">▸</span> 31,204 bytes, 1 error line kept, original archived <span class="w"><span class="dec">TRIM</span></span> <span class="s">→ 2,362 bytes</span>'); K.t += 7210; setK(); await sleep(1200); },
-  () => call({ tool:'Bash', arg:'pgrep -f worker | head -1', cls:'exec', dedupe:'same command, identical output 3×', dec:'NOTE', why:'polling loop: wait longer or change approach', res:'42817' }),
-  async () => { line('a', 'Done. Redirect fixed; provider untouched.'); await sleep(3000); },
+  () => call({ tool:'Edit', arg:'src/auth0.config.ts → replace Auth0 with Clerk', text:'<span class="s">constraint:</span> "do not change authentication providers"', jev:{ why:'A write. Three questions on the state: goal, constraints, recent steps, the proposed edit.', qs:[{ t:SCOPE, v:0.99 }, { t:DESTR, v:0.66 }, { t:IRREV, v:0.30 }], ms:184 }, dec:'ASK', res:'[permission prompt] Reflex: conflicts with the goal or a constraint   → denied', pause:1500 }),
+  () => scene(5, 'The right edit', 'Same three questions, same round trip. Scores stay low, the edit runs. Jev is consulted on every call the cheap checks let through; the difference is the answer.'),
+  () => call({ tool:'Edit', arg:'src/auth.ts → "/hom" to "/home"', text:'in scope', jev:{ why:'Same write questions. Low on all three.', qs:[{ t:SCOPE, v:0.09 }, { t:DESTR, v:0.13 }, { t:IRREV, v:0.15 }], ms:166 }, dec:'ALLOW', res:'Edited src/auth.ts (1 line)' }),
+  () => scene(6, 'Noise on the way out', 'After the tool runs, Reflex trims a 31 KB test log to its head, tail and error lines, archives the rest, and flags a polling loop. Fewer tokens for the model to re-read.'),
+  () => call({ tool:'Bash', arg:'npm test', text:'in scope', jev:{ why:'An exec. Scores from the shadow replay medians over four real sessions.', qs:[{ t:SCOPE, v:0.36 }, { t:DESTR, v:0.11 }, { t:IRREV, v:0.14 }], ms:171 }, dec:'ALLOW', res:'… 31,204 bytes of output' }),
+  async () => { line('r', `<span class="tag">reflex</span> <span><span class="s">post-tool:</span> 31,204 bytes → 2,362, 1 error line kept, original archived</span>${chip('TRIM')}`); K.t += 7210; setK(); await sleep(1400); },
+  () => call({ tool:'Bash', arg:'pgrep -f worker | head -1', text:'same command, identical output twice', stop:'dedupe', dec:'NOTE', res:'42817\n[reflex] same command returned identical output twice; wait longer or change approach' }),
+  async () => { line('a', 'Done. Redirect fixed; provider untouched.'); await sleep(3200); },
 ];
 
 (async function loop(){
   for (;;) {
-    out.innerHTML = ''; Object.assign(K, { c:0, j:0, s:0, t:0 }); setK(); light([]); jevIdle();
+    out.innerHTML = ''; Object.assign(K, { c:0, j:0, s:0, t:0 }); setK(); light([]);
+    jevcard.classList.add('idle'); qs.innerHTML = ''; jlat.textContent = ''; jwhy.textContent = 'Not reached yet. A pattern or duplicate match decides without a model.';
     for (const step of SCRIPT) await step();
   }
 })();

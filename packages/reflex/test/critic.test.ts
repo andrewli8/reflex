@@ -252,7 +252,7 @@ describe('constraint extraction', () => {
     const { extractConstraints } = await import('../src/state.js');
     const text = '> Long-running agents do not only need better reasoning. They need fast reflexes.\nFix the redirect bug. Do not change authentication providers. Only touch application code; never push to main. This must be the cause.';
     expect(extractConstraints(text)).toEqual(['Do not change authentication providers.', 'Only touch application code;', 'never push to main.']);
-    const noise = 'KEEP / DROP\nKEEP\nAnd I have never worked on the enterprise side.\nIt\'ll never scale to a Costco.\nTypes generated to `src/db.ts` (do not hand-edit).\nThe rule engine — may route work but never mark a rep.\nDon\'t be the chief blocking officer.\nnow also never delete migrations';
+    const noise = 'Only thing is, would Jev answer fast enough?\nOnly if it is cheap.\nKEEP / DROP\nKEEP\nAnd I have never worked on the enterprise side.\nIt\'ll never scale to a Costco.\nTypes generated to `src/db.ts` (do not hand-edit).\nThe rule engine — may route work but never mark a rep.\nDon\'t be the chief blocking officer.\nnow also never delete migrations';
     expect(extractConstraints(noise)).toEqual(["Don't be the chief blocking officer.", 'now also never delete migrations']);
   });
 });
