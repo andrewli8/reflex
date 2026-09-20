@@ -43,17 +43,29 @@ async function run(arm) {
     tools: arm === 'reflex' ? withReflex(base, reflex, { classes: { read_file: 'read', list_files: 'read', write_file: 'write', bash: 'exec' } }) : base,
     ...(arm === 'reflex' ? { prepareStep: reflexPrepareStep(reflex, { after: 3, checkpointEvery: 5 }) } : {}),
   };
+  const events = [];
   const r = await generateText(opts);
   const steps = r.steps.length;
+  // Per-step trace for the demo: what was called, how big the result was, what the model paid to read.
+  const trace = r.steps.map((s, i) => ({
+    step: i + 1,
+    input: s.usage?.inputTokens ?? 0,
+    output: s.usage?.outputTokens ?? 0,
+    calls: (s.toolCalls ?? []).map((c) => ({ tool: c.toolName, arg: String(Object.values(c.input ?? {})[0] ?? '').slice(0, 60) })),
+    resultBytes: (s.toolResults ?? []).reduce((a, t) => a + JSON.stringify(t.output ?? '').length, 0),
+    collapsed: (s.toolResults ?? []).filter((t) => String(t.output ?? '').includes('[reflex]')).length,
+  }));
   const input = r.steps.reduce((a, s) => a + (s.usage?.inputTokens ?? 0), 0);
   const cached = r.steps.reduce((a, s) => a + (s.usage?.cachedInputTokens ?? s.usage?.inputTokenDetails?.cacheReadTokens ?? 0), 0);
   const output = r.steps.reduce((a, s) => a + (s.usage?.outputTokens ?? 0), 0);
   const fixed = /"\/home"/.test(readFileSync(join(dir, 'src', 'auth.ts'), 'utf8')) && !/"\/hom"/.test(readFileSync(join(dir, 'src', 'auth.ts'), 'utf8'));
   const index = (() => { try { return readFileSync(join(dir, 'docs', 'INDEX.md'), 'utf8').length; } catch { return 0; } })();
-  return { arm, steps, input, cached, output, seconds: Math.round((Date.now() - t0) / 1000), fixed, indexBytes: index, finish: r.finishReason };
+  return { arm, steps, input, cached, output, seconds: Math.round((Date.now() - t0) / 1000), fixed, indexBytes: index, finish: r.finishReason, trace };
 }
 
 const results = [];
 for (let i = 0; i < REPEATS; i++) for (const arm of ARMS) { try { results.push(await run(arm)); } catch (e) { results.push({ arm, error: String(e.message ?? e).slice(0, 300) }); } }
 const mean = (arm, k) => { const xs = results.filter((r) => r.arm === arm && !r.error).map((r) => r[k]); return xs.length ? Math.round(xs.reduce((a, b) => a + b, 0) / xs.length) : null; };
-console.log(JSON.stringify({ model: MODEL, docs: DOCS, repeats: REPEATS, results, means: Object.fromEntries(ARMS.map((a) => [a, { steps: mean(a, 'steps'), input: mean(a, 'input'), output: mean(a, 'output'), seconds: mean(a, 'seconds'), fixed: results.filter((r) => r.arm === a && r.fixed).length }])) }, null, 2));
+mkdirSync('results', { recursive: true });
+writeFileSync('results/latest.json', JSON.stringify({ model: MODEL, docs: DOCS, repeats: REPEATS, results }, null, 1));
+console.log(JSON.stringify({ model: MODEL, docs: DOCS, repeats: REPEATS, results: results.map(({ trace, ...r }) => r), means: Object.fromEntries(ARMS.map((a) => [a, { steps: mean(a, 'steps'), input: mean(a, 'input'), output: mean(a, 'output'), seconds: mean(a, 'seconds'), fixed: results.filter((r) => r.arm === a && r.fixed).length }])) }, null, 2));
