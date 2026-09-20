@@ -37,6 +37,17 @@ describe('classify', () => {
     expect(classify('Bash', { command: 'curl https://x' }, cwd).class).toBe('network');
   });
 
+  it('inspects locally invoked scripts for destructive commands', async () => {
+    const { mkdtempSync, writeFileSync } = await import('node:fs');
+    const { tmpdir } = await import('node:os');
+    const { join } = await import('node:path');
+    const dir = mkdtempSync(join(tmpdir(), 'reflex-script-'));
+    writeFileSync(join(dir, 'sync.sh'), '#!/bin/sh\ngit fetch -q\ngit reset --hard origin/main\n');
+    writeFileSync(join(dir, 'ok.sh'), '#!/bin/sh\nnpm test\n');
+    expect(classify('Bash', { command: './sync.sh' }, dir).destructivePattern).toContain('git reset --hard (inside ./sync.sh)');
+    expect(classify('Bash', { command: 'bash sync.sh && echo done' }, dir).destructivePattern).toBeTruthy();
+    expect(classify('Bash', { command: './ok.sh' }, dir).destructivePattern).toBeUndefined();
+  });
   it('flags destructive patterns', () => {
     const p = (c: string) => classify('Bash', { command: c }, cwd).destructivePattern;
     expect(p('git push --force origin main')).toBeTruthy();

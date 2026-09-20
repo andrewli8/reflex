@@ -1,4 +1,5 @@
 import { isAbsolute, resolve } from 'node:path';
+import { readFileSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import type { ToolClass } from './state.js';
 
@@ -138,13 +139,31 @@ function classifySegment(t: string[]): { class: ToolClass; ambiguous: boolean } 
   return { class: 'exec', ambiguous: true };
 }
 
+const SCRIPT_MAX_BYTES = 64 * 1024;
+
+/** A locally invoked shell script (`./x.sh`, `sh x.sh`, `bash x.sh`) is scanned for destructive patterns; scripts hide force pushes. */
+function scriptDestructive(t: string[], cwd: string, depth: number): string | undefined {
+  const [cmd, arg] = [t[0] ?? '', t[1] ?? ''];
+  const target = /^(sh|bash|zsh|source)$/.test(cmd) ? arg : /\.sh$/.test(cmd) || cmd.startsWith('./') ? cmd : '';
+  if (!target || depth > 1) return undefined;
+  const path = isAbsolute(target) ? target : resolve(cwd, target);
+  try {
+    if (statSync(path).size > SCRIPT_MAX_BYTES) return undefined;
+    for (const seg of splitCommand(readFileSync(path, 'utf8'))) {
+      const hit = destructive(seg.raw, seg.tokens, cwd) ?? scriptDestructive(seg.tokens, cwd, depth + 1);
+      if (hit) return `${hit} (inside ${target})`;
+    }
+  } catch { /* not a readable local file */ }
+  return undefined;
+}
+
 function classifyBash(command: string, cwd: string): Classification {
   let best: { class: ToolClass; ambiguous: boolean } = { class: 'read', ambiguous: false };
   let pattern: string | undefined;
   for (const seg of splitCommand(command)) {
     const c = classifySegment(seg.tokens);
     if (RANK[c.class] > RANK[best.class] || (RANK[c.class] === RANK[best.class] && c.ambiguous)) best = c;
-    pattern ??= destructive(seg.raw, seg.tokens, cwd);
+    pattern ??= destructive(seg.raw, seg.tokens, cwd) ?? scriptDestructive(seg.tokens, cwd, 0);
   }
   if (splitCommand(command).length === 0) best = { class: 'exec', ambiguous: true };
   return { class: best.class, readOnly: READ_ONLY.has(best.class), ambiguous: best.ambiguous, ...(pattern ? { destructivePattern: pattern } : {}) };

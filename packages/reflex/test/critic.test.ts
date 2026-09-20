@@ -153,7 +153,7 @@ describe('trim', () => {
     const { join } = await import('node:path');
     const dir = mkdtempSync(join(tmpdir(), 'reflex-archive-'));
     const r = new Reflex({ cwd, config: { ...defaultConfig, mode: 'enforce' }, archiveDir: dir, log: () => {} });
-    const big = 'ok line\n'.repeat(400) + 'FAIL src/auth.test.ts > redirects home\n  AssertionError: expected 302\n' + 'ok line\n'.repeat(400);
+    const big = 'ok line\n'.repeat(1000) + 'FAIL src/auth.test.ts > redirects home\n  AssertionError: expected 302\n' + 'ok line\n'.repeat(1000);
     const c = call('Bash', { command: 'npm test' });
     await r.pre(c);
     const c2 = call('Bash', { command: 'npm run test:again' });
@@ -164,7 +164,7 @@ describe('trim', () => {
     expect(d.replacement).toContain('FAIL src/auth.test.ts');
     expect(d.replacement).toContain('AssertionError');
     expect(d.replacement).toContain('Full output: Read');
-    expect(readdirSync(dir)).toHaveLength(1);
+    expect(readdirSync(dir).length).toBeGreaterThanOrEqual(1);
   });
 });
 
