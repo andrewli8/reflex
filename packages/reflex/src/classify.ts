@@ -98,7 +98,8 @@ function destructive(raw: string, t: string[], cwd: string): string | undefined 
     if (has('--no-verify')) return '--no-verify';
   }
   if (cmd === 'rm' && t.some((x) => /^-[a-zA-Z]*[rf]/.test(x))) {
-    const targets = t.slice(1).filter((x) => !x.startsWith('-'));
+    // A target that is a shell variable or substitution cannot be resolved here; do not guess it is outside cwd.
+    const targets = t.slice(1).filter((x) => !x.startsWith('-') && !/[$`]/.test(x));
     if (targets.some((p) => outsideCwd(p, cwd))) return 'rm -rf outside cwd';
   }
   if (cmd === 'kubectl' && sub === 'delete') return 'kubectl delete';

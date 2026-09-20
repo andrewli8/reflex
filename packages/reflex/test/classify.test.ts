@@ -65,6 +65,8 @@ describe('classify', () => {
     expect(p('ls')).toBeUndefined();
     expect(p("cat > /private/tmp/scratch/x.json <<'EOF'\n{}\nEOF")).toBeUndefined();
     expect(p('rm -rf /private/tmp/scratch/x')).toBeUndefined();
+    expect(p('rm -rf "$REFLEX_HOME" && echo ok')).toBeUndefined();
+    expect(p('rm -rf $(mktemp -d)/x')).toBeUndefined();
     expect(p('grep -n "drop function" migrations/')).toBeUndefined();
     expect(classify('Bash', { command: "cd sub && cat > out.txt <<'EOF'\nhi\nEOF" }, cwd).class).toBe('write');
   });
