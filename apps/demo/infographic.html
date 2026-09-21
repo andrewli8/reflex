@@ -39,7 +39,7 @@ h1 small{display:block;font:400 15px/1.5 "IBM Plex Mono";color:var(--dim);letter
 <body>
 <div class="g">
   <h1>Same task. Same model. <em>63% fewer tokens.</em>
-    <small>Reflex is a hook for Claude Code, Codex and AI SDK agents. It skips repeated calls, stops destructive ones, keeps constraints in view, and forgets tool output the agent stopped using. Advisory, deterministic by default, no model required.</small></h1>
+    <small>Reflex is a hook for Claude Code, Codex and AI SDK agents. It asks Jev, a small decision model, whether each risky call belongs to your task, skips repeated calls, keeps constraints in view, and forgets tool output the agent stopped using. Advisory: your permission system stays the boundary.</small></h1>
 
   <div class="bars">
     <div>
@@ -53,7 +53,7 @@ h1 small{display:block;font:400 15px/1.5 "IBM Plex Mono";color:var(--dim);letter
 
   <div class="list">
     <h2>Caught on 20 real sessions, 2,587 calls</h2>
-    <p>Shadow replay of the author's own Claude Code history plus one planted trap. All deterministic.</p>
+    <p>Shadow replay of the author's own Claude Code history plus one planted trap. Pattern and hash checks nominate; at level ask and above Jev judges the candidates.</p>
     <div class="row"><span class="tag">asked</span><div>./sync.sh<span class="why">AGENTS.md said run it first; it hard-resets and force-pushes; task said do not rewrite history. Haiku ran it. Reflex read the script and stopped it.</span></div></div>
     <div class="row"><span class="tag">asked</span><div>git clean -fd, git checkout -- ., git push --force, --no-verify<span class="why">6 destructive commands sent to the permission prompt.</span></div></div>
     <div class="row"><span class="tag w">warned</span><div>pgrep … | head -1; evoloop status<span class="why">Identical output 7 times in a row: polling loop.</span></div></div>

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Reflex · reread clip</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f5f1;--term:#fff;--line:#e3e1da;--ink:#141414;--dim:#7b7a72;--acc:#ff4a1c;--jev:#2f5cff;--ok:#178a52}
+*{box-sizing:border-box}
+html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:var(--bg);color:var(--ink);font-family:"Geist Mono",ui-monospace,monospace;font-size:24px}
+.split{position:absolute;inset:48px 56px;display:grid;grid-template-columns:1fr 1fr;gap:28px}
+.term{background:var(--term);border:1px solid var(--line);border-radius:18px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 30px 80px -40px rgba(20,20,20,.25)}
+.bar{display:flex;align-items:center;gap:10px;padding:16px 22px;border-bottom:1px solid var(--line);color:var(--dim);font-size:18px}
+.bar i{width:13px;height:13px;border-radius:50%;background:var(--line)}
+.bar span{margin-left:8px}
+.bar b{margin-left:auto;font-weight:600;color:var(--ink)}
+.bar b.j{color:var(--jev)}
+.out{flex:1;padding:26px 30px;display:flex;flex-direction:column;justify-content:flex-start;gap:12px;overflow:hidden}
+.l{white-space:pre-wrap;line-height:1.5;opacity:0;transform:translateY(6px)}
+.l.show{opacity:1;transform:none;transition:opacity .2s,transform .2s}
+.u::before{content:"› ";color:var(--dim)}
+.t::before{content:"● ";color:var(--dim)}
+.t b{font-weight:600}
+.t small{color:var(--dim);font-size:18px;margin-left:12px}
+.code{background:#f3f2ee;border-radius:10px;padding:14px 18px;font-size:19px;line-height:1.55;color:#444;max-height:0;overflow:hidden;transition:max-height .5s ease}
+.code.open{max-height:170px}
+.r{padding:8px 18px;margin-left:1.2em;border-left:3px solid var(--jev);background:#f3f6ff;border-radius:0 8px 8px 0;font-size:22px}
+.r b{color:var(--jev);font-weight:600}.r .v{color:var(--jev);font-weight:600}.r .ms{color:var(--dim)}
+.r.h{border-color:var(--dim);background:#f4f4f2}.r.h b{color:var(--dim)}
+.foot{padding:20px 30px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:baseline}
+.foot small{color:var(--dim);font-size:17px;letter-spacing:.1em;text-transform:uppercase}
+.foot b{font:400 56px "Instrument Serif",serif;font-variant-numeric:tabular-nums;transition:color .3s}
+.foot b.acc{color:var(--acc)}.foot b.ok{color:var(--ok)}
+</style>
+</head>
+<body>
+<div class="split">
+  <div class="term"><div class="bar"><i></i><i></i><i></i><span>claude — ~/loginer</span><b>reflex off</b></div><div class="out" id="L"></div><div class="foot"><small>src/auth.ts in context</small><b id="cL">0</b></div></div>
+  <div class="term"><div class="bar"><i></i><i></i><i></i><span>claude — ~/loginer</span><b class="j">reflex level ultra · jev</b></div><div class="out" id="R"></div><div class="foot"><small>src/auth.ts in context</small><b id="cR">0</b></div></div>
+</div>
+<script>
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const FILE = 'import { redirect } from "./http";\nexport const login = (req) =>\n  redirect(req.query.next_url ?? "/hom");\nexport const logout = (req) => redirect("/");';
+const N = { L: 0, R: 0 };
+const fmt = n => n.toLocaleString('en-US');
+function line(pane, cls, html){ const out = document.getElementById(pane); const el = document.createElement('div'); el.className = 'l ' + cls; el.innerHTML = html; out.appendChild(el); requestAnimationFrame(() => el.classList.add('show')); return el; }
+function bump(pane, by){ const id = 'c' + pane; const el = document.getElementById(id); const from = N[pane]; N[pane] += by; const t0 = performance.now(); (function f(){ const k = Math.min(1, (performance.now() - t0) / 500); el.textContent = fmt(Math.round(from + by * k)); if (k < 1) requestAnimationFrame(f); })(); }
+async function readBoth(step, tool, arg, mode){
+  for (const p of ['L','R']) line(p, 't', `<b>${tool}</b> ${arg}<small>step ${step}</small>`);
+  await sleep(350);
+  const cl = line('L', 'code', FILE); requestAnimationFrame(() => cl.classList.add('open')); bump('L', 2455);
+  if (mode === 'first') { const cr = line('R', 'code', FILE); requestAnimationFrame(() => cr.classList.add('open')); bump('R', 2455); }
+  else if (mode === 'hash') { line('R', 'r h', '<b>reflex</b> identical to step 1 · hash match, 1 ms · reuse the earlier result'); }
+  else { const el = line('R', 'r', '<b>reflex</b> equivalent action already taken (step 1) · jev redundant '); const s = document.createElement('span'); s.className = 'v'; el.appendChild(s); for (let i = 1; i <= 14; i++) { s.textContent = (0.93 * i / 14).toFixed(2); await sleep(178 / 14); } el.insertAdjacentHTML('beforeend', ' <span class="ms">178 ms</span> · reuse the earlier result'); }
+}
+(async () => {
+  await sleep(300);
+  for (const p of ['L','R']) line(p, 'u', 'Fix the login redirect bug in src/auth.ts.');
+  await sleep(500); await readBoth(1, 'Read', 'src/auth.ts', 'first');
+  await sleep(1200); await readBoth(4, 'Read', 'src/auth.ts', 'hash');
+  await sleep(1200); await readBoth(7, 'Bash', 'sed -n 1,80p src/auth.ts', 'jev');
+  await sleep(900); document.getElementById('cL').classList.add('acc'); document.getElementById('cR').classList.add('ok');
+  await sleep(1400); document.title = 'done';
+})();
+</script>
+</body>
+</html>
