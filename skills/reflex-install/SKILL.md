@@ -13,7 +13,7 @@ Reflex is a hook layer that advises the agent's own permission system: it nudges
    ```bash
    npm i -g reflex-hooks
    ```
-   If global install is not possible, `npx -y reflex-hooks@latest init` also works; the hook will then point at an absolute path and `reflex init` must be re-run after upgrades.
+   If global install is not possible, `npx -y -p reflex-hooks@latest reflex init` also works; the hook will then point at an absolute path and `reflex init` must be re-run after upgrades.
 
 2. From the project root, install hooks for the hosts in use:
    ```bash
