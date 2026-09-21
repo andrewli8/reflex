@@ -97,8 +97,10 @@ async function ensureJevKey(): Promise<void> {
   if (readSecret('TYPESAFE_API_KEY')) return;
   if (!process.stdin.isTTY) { console.log('\nNo Jev key found: Reflex runs limited (no judgment on destructive commands or constraints). Add one with: reflex key jev <key>'); return; }
   const rl = createInterface({ input: process.stdin, output: process.stdout });
-  const key = (await rl.question('\nJev API key from TypeSafe (typesafe.ai), enter to skip: ')).trim();
-  rl.close();
+  let key = '';
+  try { key = (await rl.question('\nJev API key from TypeSafe (typesafe.ai), enter to skip: ')).trim(); }
+  catch { key = ''; } // stdin closed (Ctrl-D, piped input ended): same as skipping
+  finally { rl.close(); }
   if (key) console.log(`stored in ${writeSecret('TYPESAFE_API_KEY', key)}`);
   else console.log('Running limited until a key is added: reflex key jev <key>');
 }
