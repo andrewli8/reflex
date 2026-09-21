@@ -15,9 +15,7 @@ html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:var(--b
 .bar span{margin-left:8px}
 .bar b{margin-left:auto;font-weight:600;color:var(--ink)}
 .bar b.j{color:var(--jev)}
-.out{flex:1;padding:26px 30px;display:flex;flex-direction:column;justify-content:flex-start;gap:12px;overflow:hidden}
-.l{white-space:pre-wrap;line-height:1.5;opacity:0;transform:translateY(6px)}
-.l.show{opacity:1;transform:none;transition:opacity .2s,transform .2s}
+.out{flex:1;padding:26px 30px;display:flex;flex-direction:column;justify-content:flex-start;gap:12px;overflow:hidden}{white-space:pre-wrap;line-height:1.5;opacity:0;transform:translateY(6px)}.now{opacity:1;transform:none}.show{opacity:1;transform:none;transition:opacity .2s,transform .2s}
 .u::before{content:"› ";color:var(--dim)}
 .t::before{content:"● ";color:var(--dim)}
 .t b{font-weight:600}
@@ -54,12 +52,11 @@ async function readBoth(step, tool, arg, mode){
   else { const el = line('R', 'r', '<b>reflex</b> equivalent action already taken (step 1) · jev redundant '); const s = document.createElement('span'); s.className = 'v'; el.appendChild(s); for (let i = 1; i <= 14; i++) { s.textContent = (0.93 * i / 14).toFixed(2); await sleep(178 / 14); } el.insertAdjacentHTML('beforeend', ' <span class="ms">178 ms</span> · reuse the earlier result'); }
 }
 (async () => {
-  await sleep(300);
-  for (const p of ['L','R']) line(p, 'u', 'Fix the login redirect bug in src/auth.ts.');
-  await sleep(500); await readBoth(1, 'Read', 'src/auth.ts', 'first');
-  await sleep(1200); await readBoth(4, 'Read', 'src/auth.ts', 'hash');
-  await sleep(1200); await readBoth(7, 'Bash', 'sed -n 1,80p src/auth.ts', 'jev');
-  await sleep(900); document.getElementById('cL').classList.add('acc'); document.getElementById('cR').classList.add('ok');
+  // Frame one already shows step 1 on both sides: the divergence starts within the first second.
+  for (const p of ['L','R']) { line(p, 'u', 'Fix the login redirect bug in src/auth.ts.'); line(p, 't', '<b>Read</b> src/auth.ts<small>step 1</small>'); const c = line(p, 'code', FILE); c.classList.add('open'); N[p] = 2455; document.getElementById('c' + p).textContent = fmt(2455); }
+  await sleep(700); await readBoth(4, 'Read', 'src/auth.ts', 'hash');
+  await sleep(1100); await readBoth(7, 'Bash', 'sed -n 1,80p src/auth.ts', 'jev');
+  await sleep(800); document.getElementById('cL').classList.add('acc'); document.getElementById('cR').classList.add('ok');
   await sleep(1400); document.title = 'done';
 })();
 </script>
