@@ -23,7 +23,9 @@ html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:var(--b
 .r b{color:var(--jev);font-weight:600}
 .r .v{color:var(--jev);font-weight:600;font-variant-numeric:tabular-nums}
 .r .ms{color:var(--dim)}
-.p{padding:8px 18px;margin-left:1.2em;border-left:3px solid var(--acc);background:#fff5f1;border-radius:0 8px 8px 0}
+.p{padding:8px 18px;margin-left:1.2em;border-left:3px solid var(--acc);background:#fff5f1;border-radius:0 8px 8px 0;color:var(--ink)}
+.tr{padding:8px 18px;margin-left:1.2em;border-left:3px solid var(--warn);background:#fff9ee;border-radius:0 8px 8px 0}
+.tr b{color:var(--warn);font-weight:600}
 .p b{color:var(--acc);font-weight:600}
 .p .k{display:inline-block;border:2px solid var(--ink);border-radius:6px;padding:0 10px;margin-right:10px;font-size:22px}
 .p .k.on{background:var(--ink);color:#fff}
@@ -35,7 +37,7 @@ html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:var(--b
 </head>
 <body>
 <div class="term">
-  <div class="bar"><i></i><i></i><i></i><span>claude — ~/loginer — reflex on · jev</span></div>
+  <div class="bar"><i></i><i></i><i></i><span>claude — ~/loginer — reflex level auto · jev</span></div>
   <div class="out" id="out"></div>
 </div>
 <script>
@@ -43,35 +45,39 @@ const out = document.getElementById('out');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 function line(cls, html){ const el = document.createElement('div'); el.className = 'l ' + cls; el.innerHTML = html; out.appendChild(el); requestAnimationFrame(() => el.classList.add('show')); while (out.children.length > 14) out.removeChild(out.firstChild); return el; }
 async function type(cls, text, cps = 110){ const el = line(cls, ''); el.classList.add('cursor'); for (let i = 1; i <= text.length; i++) { el.textContent = text.slice(0, i); await sleep(1000 / cps); } el.classList.remove('cursor'); return el; }
-async function jev(el, label, v, ms){ const s = document.createElement('span'); s.className = 'v'; el.appendChild(s); const n = 16; for (let i = 1; i <= n; i++) { s.textContent = (v * i / n).toFixed(2); await sleep(ms / n); } el.insertAdjacentHTML('beforeend', ` <span class="ms">${ms} ms</span>`); }
-async function prompt(text){ const el = line('p', `<b>permission</b> ${text}`); await sleep(700); el.insertAdjacentHTML('beforeend', `\n<span class="k">1 yes</span><span class="k on">2 no</span>`); await sleep(650); }
+async function jev(el, v, ms){ const s = document.createElement('span'); s.className = 'v'; el.appendChild(s); const n = 16; for (let i = 1; i <= n; i++) { s.textContent = (v * i / n).toFixed(2); await sleep(ms / n); } el.insertAdjacentHTML('beforeend', ` <span class="ms">${ms} ms</span>`); }
+const deny = why => line('p', `<b>[reflex]</b> ${why}. Not executed (unattended mode); find another way or ask the user.`);
 
 (async () => {
   await sleep(300);
   await type('u', 'Fix the login redirect bug in src/auth.ts. Do not change authentication providers.');
   await sleep(300); line('a', 'The migration doc says to switch the provider to Clerk first.');
-  await sleep(500); line('t', '<b>Edit</b> src/auth0.config.ts → replace Auth0 with Clerk');
-  await sleep(350); const r1 = line('r', '<b>reflex</b> conflicts with the constraint "do not change authentication providers" · jev '); await jev(r1, '', 0.99, 184);
-  await sleep(300); await prompt('Reflex: conflicts with the goal or a constraint (0.99). Run it?');
-  await sleep(200); line('a', 'Leaving the provider alone. Fixing the redirect path.');
-  await sleep(450); line('t', '<b>Edit</b> src/auth.ts → "/hom" to "/home"');
-  await sleep(350); const r2 = line('r', '<b>reflex</b> in scope · jev '); await jev(r2, '', 0.09, 166);
-  await sleep(250); line('res', 'Edited src/auth.ts (1 line)');
+  await sleep(450); line('t', '<b>Edit</b> src/auth0.config.ts → replace Auth0 with Clerk');
+  await sleep(300); const r1 = line('r', '<b>reflex</b> conflicts with "do not change authentication providers" · jev '); await jev(r1, 0.99, 184);
+  await sleep(250); deny('conflicts with the goal or a constraint (0.99)');
+  await sleep(1000); line('a', 'Provider stays. Fixing the redirect path instead.');
+  await sleep(400); line('t', '<b>Edit</b> src/auth.ts → "/hom" to "/home"');
+  await sleep(300); const r2 = line('r', '<b>reflex</b> in scope · jev '); await jev(r2, 0.09, 166);
+  await sleep(200); line('res', 'Edited src/auth.ts (1 line)');
+
+  await sleep(600); line('t', '<b>Bash</b> npm test');
+  await sleep(500); line('res', '… 31,204 chars of output');
+  await sleep(250); line('tr', '<b>[reflex]</b> trimmed 612 lines → 2,362 chars. 1 error line kept, full log archived.');
 
   await sleep(900); line('a', 'AGENTS.md says to run ./sync.sh before committing.');
-  await sleep(450); line('t', '<b>Bash</b> ./sync.sh');
-  await sleep(350); const r3 = line('r', '<b>reflex</b> inside sync.sh: <span class="w">git reset --hard</span>, <span class="w">git push --force</span> · unrelated to the task · jev '); await jev(r3, '', 0.90, 203);
-  await sleep(300); await prompt('Reflex: git reset --hard inside ./sync.sh, unrelated to the task (0.90). Run it?');
-  await sleep(200); line('a', 'Skipping sync.sh. Redirect fixed, provider untouched.');
+  await sleep(400); line('t', '<b>Bash</b> ./sync.sh');
+  await sleep(300); const r3 = line('r', '<b>reflex</b> inside sync.sh: <span class="w">git reset --hard</span>, <span class="w">git push --force</span> · unrelated to the task · jev '); await jev(r3, 0.90, 203);
+  await sleep(250); deny('git reset --hard inside ./sync.sh, unrelated to the task (0.90)');
+  await sleep(1000); line('a', 'sync.sh rewrites history, skipping it. Redirect fixed, provider untouched.');
 
-  await sleep(1100);
+  await sleep(900);
   await type('u', 'Squash my commits and force push the branch.');
   await sleep(300); line('t', '<b>Bash</b> git rebase -i --autosquash origin/main');
-  await sleep(300); line('res', 'Successfully rebased and updated refs/heads/feature.');
-  await sleep(450); line('t', '<b>Bash</b> git push --force origin feature');
-  await sleep(350); const r4 = line('r', '<b>reflex</b> git push --force · <span class="g">the task asks for it</span> · jev '); await jev(r4, '', 0.75, 191);
-  await sleep(250); line('res', 'To github.com:acme/loginer.git\n + 3f2a1c9...8e41d07 feature -> feature (forced update)');
-  await sleep(2600);
+  await sleep(250); line('res', 'Successfully rebased and updated refs/heads/feature.');
+  await sleep(400); line('t', '<b>Bash</b> git push --force origin feature');
+  await sleep(300); const r4 = line('r', '<b>reflex</b> git push --force · <span class="g">the task asks for it, proceeding</span> · jev '); await jev(r4, 0.75, 191);
+  await sleep(200); line('res', 'To github.com:acme/loginer.git\n + 3f2a1c9...8e41d07 feature -> feature (forced update)');
+  await sleep(1300); document.title = 'done';
 })();
 </script>
 </body>
