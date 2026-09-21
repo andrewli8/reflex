@@ -9,8 +9,8 @@
     "README.md"
   ],
   "bin": {
-    "reflex": "./dist/cli.js",
-    "reflex-hook": "./dist/hook-bin.js"
+    "reflex": "dist/cli.js",
+    "reflex-hook": "dist/hook-bin.js"
   },
   "scripts": {
     "test": "vitest run",
@@ -25,7 +25,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/andrewli8/reflex"
+    "url": "git+https://github.com/andrewli8/reflex.git"
   },
   "keywords": [
     "claude-code",
