@@ -40,8 +40,8 @@ h1 small{display:block;font:400 13px/1.55 "Geist Mono";color:var(--dim);margin-t
 </head>
 <body>
 <div class="g">
-  <h1>Your agent reads the same file four times. <i>Jev</i> knows it is the same file.
-    <small>Every result an agent keeps is re-sent to the model on every later step. Reflex hashes each call and hands back the earlier result on an exact repeat; on a near repeat (a different command, same content) it asks Jev one question. Measured on the author's own Claude Code history and the Jev probe states.</small></h1>
+  <h1>Your agent re-reads what it already has. <i>Jev</i> knows it is the same file.
+    <small>Every result an agent keeps is re-sent to the model on every later step. Reflex hashes each call and hands back the earlier result on an exact repeat, unless the file changed on disk or the agent wrote to it since; on a near repeat (a different command, same content) it asks Jev one question. Measured on the author's own Claude Code history and the Jev probe states.</small></h1>
 
   <div class="card">
     <h2>One question to <i>Jev</i>: is this redundant with a recent read?</h2>
@@ -66,7 +66,7 @@ h1 small{display:block;font:400 13px/1.55 "Geist Mono";color:var(--dim);margin-t
   </div>
 
   <div class="foot">
-    <div class="lever"><b>Exact repeat: hash, 1 ms</b>Same tool, same arguments, file unchanged. Reflex returns "identical call already made at step N" with the first 60 characters of the earlier result. No model.</div>
+    <div class="lever"><b>Exact repeat: hash, 1 ms</b>Same tool, same arguments, same mtime, no write in between. Reflex returns "identical call already made at step N" with the first 60 characters of the earlier result. No model.</div>
     <div class="lever j"><b><i>Jev</i> on near repeats, level ultra</b>cat after Read, sed after cat, a second search for the same thing. Jev scores redundancy against the recent steps; at 0.90 or above the earlier result is reused.</div>
     <div class="lever"><b>What we do not claim</b>Predicting which reads will turn out useless scored at coin-flip quality on 420 labelled reads. Reflex records that answer and does not act on it.</div>
     <div class="cmd">npm i -g agent-reflex && reflex level ultra</div>

@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { statSync } from 'node:fs';
 import { isAbsolute, resolve } from 'node:path';
 import { classify } from './classify.js';
 
@@ -16,6 +17,8 @@ export interface Action {
   outcome?: Outcome;
   resultDigest?: string;
   resultHash?: string;
+  /** File mtime at the time of a single-path read; a later read with a different mtime is not a duplicate. */
+  mtimeMs?: number;
 }
 
 export interface ControlState {
@@ -110,7 +113,12 @@ export function summarize(tool: string, args: Record<string, unknown>): string {
 export function makeAction(tool: string, args: Record<string, unknown>, cwd: string, step: number): Action {
   const cls = classify(tool, args, cwd);
   const { canonical, paths } = canonicalArgs(tool, args, cwd);
-  return { tool, class: cls.class, readOnly: cls.readOnly, summary: summarize(tool, args), signature: sha(`${tool}:${canonical}`), paths, step };
+  const mtimeMs = cls.readOnly && paths.length === 1 ? fileMtime(paths[0]!) : undefined;
+  return { tool, class: cls.class, readOnly: cls.readOnly, summary: summarize(tool, args), signature: sha(`${tool}:${canonical}`), paths, step, ...(mtimeMs !== undefined ? { mtimeMs } : {}) };
+}
+
+function fileMtime(path: string): number | undefined {
+  try { return statSync(path).mtimeMs; } catch { return undefined; }
 }
 
 export function extractConstraints(goal: string): string[] {

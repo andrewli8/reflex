@@ -33,6 +33,18 @@ describe('detectFlags', () => {
     const recent2 = [act('Grep', { pattern: 'x' }, 1), act('Write', { file_path: 'b.ts' }, 2)];
     expect(detectFlags(recent2, makeAction('Grep', { pattern: 'x' }, cwd, 3)).exactDuplicate).toBe(false);
   });
+  it('a read is not a duplicate once the file changed on disk, even with no agent write in between', () => {
+    const earlier = { ...act('Read', { file_path: 'a.ts' }, 1), mtimeMs: 1000 };
+    const same = { ...makeAction('Read', { file_path: 'a.ts' }, cwd, 3), mtimeMs: 1000 };
+    const changed = { ...same, mtimeMs: 2000 };
+    expect(detectFlags([earlier], same).exactDuplicate).toBe(true);
+    expect(detectFlags([earlier], changed).exactDuplicate).toBe(false);
+  });
+  it('records the mtime of a single-path read from disk', () => {
+    const a = makeAction('Read', { file_path: 'package.json' }, process.cwd(), 1);
+    expect(typeof a.mtimeMs).toBe('number');
+    expect(makeAction('Grep', { pattern: 'x' }, cwd, 1).mtimeMs).toBeUndefined();
+  });
   it('browser reads are cleared by a click on the same MCP server, and empty results are never a duplicate basis', () => {
     const page = (n: number) => act('mcp__claude-in-chrome__read_page', { filter: 'all' }, n);
     const click = { ...act('mcp__claude-in-chrome__computer', { action: 'left_click' }, 2), readOnly: false, class: 'exec' as const };

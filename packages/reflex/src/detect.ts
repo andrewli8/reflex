@@ -56,6 +56,7 @@ export function detectFlags(recent: Action[], proposed: Action, o: CycleOpts = d
     const a = window[i]!;
     if (a.signature !== proposed.signature || (a.outcome !== 'ok' && a.outcome !== 'trimmed')) continue;
     if (a.resultDigest === '') break; // empty text result (image, binary): no evidence a re-read is redundant
+    if (a.mtimeMs !== undefined && proposed.mtimeMs !== undefined && a.mtimeMs !== proposed.mtimeMs) break; // file changed outside the agent's own writes
     exactDuplicate = !window.slice(i + 1).some((m) => !m.readOnly && invalidates(m, proposed));
     break;
   }
