@@ -25,7 +25,7 @@ describe('claude-code adapter', () => {
     expect(nudge?.hookSpecificOutput?.['permissionDecision']).toBeUndefined();
     writeFileSync(join(cwd, 'reflex.config.json'), JSON.stringify({ mode: 'enforce' }));
     const deny = await handleHook(read('t3'));
-    expect(deny?.hookSpecificOutput).toMatchObject({ permissionDecision: 'deny', permissionDecisionReason: expect.stringContaining('reflex:force') });
+    expect(deny?.hookSpecificOutput).toMatchObject({ permissionDecision: 'deny', permissionDecisionReason: expect.stringContaining('call again') });
     const log = readFileSync(join(home, 'sessions', 's1.jsonl'), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
     expect(log[0]).toMatchObject({ phase: 'meta', goal: 'Fix the bug. Do not touch auth.' });
   });
