@@ -28,6 +28,9 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family
 .note{color:var(--acc);font-size:14px;margin-top:6px;opacity:0}
 .script{grid-column:1/4;overflow:hidden;height:0;font-size:14px;color:var(--mute);line-height:1.9;border-top:1px solid var(--rule);margin-top:6px}
 .script b{color:var(--ink);font-weight:500;background:linear-gradient(transparent 60%,rgba(255,74,28,.18) 60%)}
+.stamp.ok{border-color:var(--ok);color:var(--ok)}
+.card.j .stamp{top:22px;transform:rotate(-6deg) scale(1.6)}
+.meter .bar i.ok{background:var(--ok)}
 .stamp{position:absolute;right:24px;top:50%;transform:translateY(-50%) rotate(-6deg) scale(1.6);opacity:0;border:2px solid var(--acc);color:var(--acc);border-radius:6px;padding:4px 10px;font-weight:600;letter-spacing:.14em;font-size:13px}
 .pin{width:min(860px,88vw);border-left:3px solid var(--ink);padding:6px 16px;font-size:15px;color:var(--ink);margin-bottom:34px;opacity:0}
 .pin small{display:block;color:var(--mute);font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px}
@@ -59,15 +62,27 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family
   <section class="scene" id="s0">
     <div>
       <div class="h" id="h0">Your agent makes a thousand tool calls. <i>Reflex reads every one in 30 ms.</i></div>
-      <p class="sub">A hook for Claude Code, Codex and AI SDK agents. Deterministic checks first. A decision model, Jev, only where judgment is needed.</p>
+      <p class="sub">A hook for Claude Code, Codex and AI SDK agents. Pattern lists nominate. Jev, a small decision model, judges each candidate against your task in one round trip.</p>
     </div>
   </section>
 
   <section class="scene" id="s1">
-    <div class="wrap">
-      <div class="card c1"><span class="k">step 1</span><span>Read src/auth.ts</span><span class="r ok">ok · 412 bytes</span></div>
-      <div class="card c2"><span class="k">step 2</span><span>Read src/auth.ts</span><span class="r acc">identical to step 1</span><i class="line"></i></div>
-      <div class="note n1">[reflex] skipped. The earlier result began "export const login = …". Reuse it.</div>
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <div class="pin p1"><small>your task, turn 1</small>Squash my commits and <b>force push</b> the branch.</div>
+      <div class="wrap">
+        <div class="card c1 j"><span class="k">step 2</span><span>Bash git push --force origin feature</span><span class="r"></span>
+          <div class="meter"><span>Jev · destructive pattern · requested by the task?</span><span class="bar"><i class="m0a ok"></i></span><span class="v v0a">0.00</span></div>
+          <div class="stamp ok">PROCEEDS</div>
+        </div>
+      </div>
+      <div class="pin p2" style="margin-top:30px"><small>your task, turn 2</small>Fix the typo in README. <b>Do not rewrite history.</b></div>
+      <div class="wrap">
+        <div class="card c2 j"><span class="k">step 5</span><span>Bash git push --force origin main</span><span class="r"></span>
+          <div class="meter"><span>Jev · destructive pattern · forbidden by a constraint?</span><span class="bar"><i class="m0b"></i></span><span class="v v0b">0.00</span></div>
+          <div class="stamp">ASK</div>
+        </div>
+        <div class="note n1">[reflex] same command, about 190 ms each. Turn 1 proceeded with a note; turn 2 went to your permission prompt. The pattern list nominated both. Jev read the task.</div>
+      </div>
     </div>
   </section>
 
@@ -75,9 +90,10 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family
     <div class="wrap">
       <div class="card c3"><span class="k">step 3</span><span>Bash ./sync.sh</span><span class="r">AGENTS.md said run it first</span>
         <div class="script">git fetch -q<br><b>git reset --hard origin/main</b><br><b>git push --force origin main</b></div>
+        <div class="meter"><span>Jev · unrelated to the task?</span><span class="bar"><i class="m3"></i></span><span class="v v3">0.00</span></div>
         <div class="stamp">ASK</div>
       </div>
-      <div class="note n2">[reflex] git reset --hard inside ./sync.sh. Sent to your permission prompt. Reflex read the script; a pattern list would have missed it.</div>
+      <div class="note n2">[reflex] git reset --hard inside ./sync.sh. Reflex opened the script and nominated the call; Jev judged it unrelated to the task. Sent to your permission prompt.</div>
     </div>
   </section>
 
@@ -143,20 +159,27 @@ tl.to('#h0 .w span', { y: 0, duration: 1, stagger: .06, ease: 'power4.out' }, '<
 tl.from('#s0 .sub', { y: 14, opacity: 0, duration: .8 }, '-=.4');
 hide('#s0');
 
-// 1 · duplicate read
-show('#s1', '01 · duplicate');
-tl.from('.c1', { y: 24, opacity: 0, duration: .7 }, '<');
-tl.from('.c2', { y: 24, opacity: 0, duration: .7 }, '+=.9');
-tl.to('.c2 .line', { scaleX: 1, duration: .5, ease: 'power2.inOut' }, '+=.5');
-tl.to('.c2', { opacity: .45, duration: .4 }, '<');
-tl.to('.n1', { opacity: 1, y: 0, duration: .5 }, '-=.2');
+// 1 · same command, two tasks
+show('#s1', '01 · same command, two tasks');
+const meter = (bar, val, v, dur = 1) => { const o = { v: 0 }; tl.to(bar, { scaleX: v, duration: dur, ease: 'power2.inOut' }, '+=.4'); tl.to(o, { v, duration: dur, ease: 'power2.inOut', onUpdate: () => document.querySelector(val).textContent = o.v.toFixed(2) }, '<'); };
+tl.to('.p1', { opacity: 1, duration: .6 }, '<');
+tl.from('.c1', { y: 24, opacity: 0, duration: .7 }, '+=.4');
+meter('.m0a', '.v0a', .75);
+tl.to('.c1 .stamp', { opacity: 1, scale: 1, rotate: -6, duration: .35, ease: 'back.out(2)' }, '+=.3');
+tl.to('.p2', { opacity: 1, duration: .6 }, '+=.8');
+tl.from('.c2', { y: 24, opacity: 0, duration: .7 }, '+=.4');
+meter('.m0b', '.v0b', .99);
+tl.to('.c2', { borderColor: '#ff4a1c', duration: .3 }, '-=.2');
+tl.to('.c2 .stamp', { opacity: 1, scale: 1, rotate: -6, duration: .35, ease: 'back.out(2)' }, '+=.3');
+tl.to('.n1', { opacity: 1, duration: .5 }, '-=.1');
 hide('#s1');
 
 // 2 · script inspection
-show('#s2', '02 · destructive, hidden in a script');
+show('#s2', '02 · hidden in a script, judged by Jev');
 tl.from('.c3', { y: 24, opacity: 0, duration: .7 }, '<');
 tl.to('.c3 .script', { height: 92, duration: .8, ease: 'power3.inOut' }, '+=.9');
-tl.to('.c3 .stamp', { opacity: 1, scale: 1, duration: .35, ease: 'back.out(2)' }, '+=.5');
+meter('.m3', '.v3', .90);
+tl.to('.c3 .stamp', { opacity: 1, scale: 1, rotate: -6, duration: .35, ease: 'back.out(2)' }, '+=.5');
 tl.to('.n2', { opacity: 1, duration: .5 }, '-=.1');
 hide('#s2');
 
@@ -195,15 +218,15 @@ tl.to('#s5', { autoAlpha: 0, duration: .6 }, '+=3.4');
 
 // reset transient state so the loop replays cleanly
 tl.set('#h0 .w span', { y: '110%' });
-tl.set('.c2 .line, .m1, .m2', { scaleX: 0 });
-tl.set(['.c2'], { opacity: 1 });
-tl.set(['.n1', '.n2', '.n3', '.pin', '.c3 .stamp', '#pct'], { opacity: 0 });
-tl.set('.c3 .stamp', { scale: 1.6 });
+tl.set('.m0a, .m0b, .m3, .m1, .m2', { scaleX: 0 });
+tl.set(['.n1', '.n2', '.n3', '.pin', '.stamp', '#pct'], { opacity: 0 });
+tl.set('.stamp', { scale: 1.6 });
+tl.set('.c2', { borderColor: '#d9d5cb' });
 tl.set('.c3 .script', { height: 0 });
 tl.set('.c4', { borderColor: '#d9d5cb' });
 tl.set('#stA i, #stB i', { scaleX: 0 });
 tl.set('#cmd', { width: 0 });
-tl.call(() => { document.getElementById('nA').firstChild.textContent = '0'; document.getElementById('nB').firstChild.textContent = '0'; document.querySelector('.v1').textContent = '0.00'; document.querySelector('.v2').textContent = '0.00'; });
+tl.call(() => { document.getElementById('nA').firstChild.textContent = '0'; document.getElementById('nB').firstChild.textContent = '0'; for (const c of ['.v0a', '.v0b', '.v3', '.v1', '.v2']) document.querySelector(c).textContent = '0.00'; });
 </script>
 </body>
 </html>
