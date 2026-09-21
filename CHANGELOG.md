@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.0.1 (unreleased)
+## 0.1.0 (2026-09-21)
 
 - Core: tool-call classification, destructive-pattern ASK, duplicate/cycle/stuck detection, mode cap (shadow / nudge / enforce), rate cap, `reflex:force` override.
 - Claude Code adapter: PreToolUse, PostToolUse, PostToolUseFailure, PermissionRequest; append-only session log; transcript-derived goal, constraints, latest prompt and plan.
