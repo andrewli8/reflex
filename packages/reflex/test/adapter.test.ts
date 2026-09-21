@@ -139,6 +139,7 @@ describe('secrets and shim', () => {
     const { readSecret, writeSecret } = await import('../src/session.js');
     const { writeShim } = await import('../src/cli.js');
     const { statSync, readFileSync: rf } = await import('node:fs');
+    delete process.env['TYPESAFE_API_KEY']; // the shell may export the real key
     const p = writeSecret('TYPESAFE_API_KEY', 'k123');
     expect((statSync(p).mode & 0o777)).toBe(0o600);
     expect(readSecret('TYPESAFE_API_KEY')).toBe('k123');
