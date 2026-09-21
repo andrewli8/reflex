@@ -7,7 +7,7 @@ Works with Claude Code, Codex and the Vercel AI SDK.
 ## Quick start
 
 ```bash
-npm i -g agent-reflex
+npm i -g reflex-hooks
 cd your-project
 reflex init            # Claude Code; add --codex for Codex, --all for both
 ```
@@ -56,7 +56,7 @@ Also, without a model: your constraints are restated every turn so they never sc
 ## Install, in detail
 
 ```bash
-npm i -g agent-reflex
+npm i -g reflex-hooks
 cd your-project
 reflex init              # Claude Code:  .claude/settings.json
 reflex init --codex      # Codex:        .codex/hooks.json
@@ -104,7 +104,7 @@ Jev is the default. The others exist for comparison and for people who cannot us
 | provider | what | needs |
 |---|---|---|
 | `jev` (default) | [Jev](https://typesafe.ai/), TypeSafe's hosted decision model, 130 to 500 ms, about $0.02 per 1,000 calls | `reflex key jev <key>` |
-| `laya` | [Laya](https://huggingface.co/convaiinnovations/laya), open source (Apache 2.0), runs on your machine, about 290 ms per question on a laptop CPU | `npm i -g agent-reflex-laya`, 1.7 GB download on first use, 2 GB RAM |
+| `laya` | [Laya](https://huggingface.co/convaiinnovations/laya), open source (Apache 2.0), runs on your machine, about 290 ms per question on a laptop CPU | `npm i -g reflex-hooks-oss`, 1.7 GB download on first use, 2 GB RAM |
 | `none` | candidates only, no judgment | nothing |
 | `llm` | Claude Haiku answering the same questions, for comparison | `ANTHROPIC_API_KEY` |
 
@@ -113,7 +113,7 @@ Jev is the default. The others exist for comparison and for people who cannot us
 Laya is a 421M-parameter decision model with the same three primitives as Jev, released by convaiinnovations under Apache 2.0. Nothing leaves your machine.
 
 ```bash
-npm i -g agent-reflex-laya
+npm i -g reflex-hooks-oss
 reflex level ask
 # in reflex.config.json (or ~/.reflex/config.json):
 { "level": "ask", "provider": "laya" }
@@ -126,7 +126,7 @@ What Jev is not asked outside `ultra`: whether a read will turn out useful. We m
 ## AI SDK
 
 ```ts
-import { Reflex, withReflex, reflexPrepareStep } from 'agent-reflex';
+import { Reflex, withReflex, reflexPrepareStep } from 'reflex-hooks';
 
 const reflex = new Reflex({ cwd: process.cwd(), goal: task });
 await generateText({

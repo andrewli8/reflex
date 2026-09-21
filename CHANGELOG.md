@@ -16,3 +16,7 @@
 - Vercel AI SDK adapter: `withReflex` tool wrapping and `reflexPrepareStep` checkpointed collapse; verb-based classification for arbitrary tool names.
 - Polling-loop warning, `UserPromptSubmit` constraint restatement, repetitive small-output trim, relevance question on reads, replay collapse simulation and false-trim detection.
 - Disk-backed decision cache shared across hook processes; `modelClasses` config; hook errors logged to `~/.reflex/errors.log`.
+
+## 0.1.0 rename
+
+Published as `reflex-hooks` (npm rejected `agent-reflex` as too similar to an existing package) and `reflex-hooks-oss` for the open-source Laya provider.

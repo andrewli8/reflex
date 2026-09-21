@@ -1,9 +1,9 @@
-# agent-reflex-laya
+# reflex-hooks-oss (Reflex, open-source model)
 
-Local, open-source decision model for [agent-reflex](https://www.npmjs.com/package/agent-reflex). Runs [Laya](https://huggingface.co/convaiinnovations/laya) (Apache 2.0, 421M parameters) on your machine through ONNX, so no tool-call state leaves your computer.
+Local, open-source decision model for [reflex-hooks](https://www.npmjs.com/package/reflex-hooks). Runs [Laya](https://huggingface.co/convaiinnovations/laya) (Apache 2.0, 421M parameters) on your machine through ONNX, so no tool-call state leaves your computer.
 
 ```bash
-npm i -g agent-reflex agent-reflex-laya
+npm i -g reflex-hooks reflex-hooks-oss
 ```
 
 In `reflex.config.json` (or `~/.reflex/config.json`):

@@ -1,6 +1,6 @@
 ---
 name: reflex-install
-description: Install and verify Reflex (agent-reflex) hooks for Claude Code and Codex in the current project. Use when the user asks to install Reflex, add Reflex hooks, set up agent reflexes, or run a Reflex report.
+description: Install and verify Reflex (reflex-hooks) hooks for Claude Code and Codex in the current project. Use when the user asks to install Reflex, add Reflex hooks, set up agent reflexes, or run a Reflex report.
 ---
 
 # Install Reflex
@@ -11,9 +11,9 @@ Reflex is a hook layer that advises the agent's own permission system: it nudges
 
 1. Install the CLI globally so the hook command survives upgrades:
    ```bash
-   npm i -g agent-reflex
+   npm i -g reflex-hooks
    ```
-   If global install is not possible, `npx -y agent-reflex@latest init` also works; the hook will then point at an absolute path and `reflex init` must be re-run after upgrades.
+   If global install is not possible, `npx -y reflex-hooks@latest init` also works; the hook will then point at an absolute path and `reflex init` must be re-run after upgrades.
 
 2. From the project root, install hooks for the hosts in use:
    ```bash

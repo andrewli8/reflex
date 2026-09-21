@@ -27,7 +27,7 @@ function llmOrNone(): Provider {
 /** Provider factory for `reflex serve --provider <name>`: loads the heavy local model in-process. */
 export async function daemonProvider(name: string): Promise<Provider> {
   if (name === 'laya') {
-    const pkg = 'agent-reflex-laya'; // variable so bundlers and vitest do not resolve the optional package eagerly
+    const pkg = 'reflex-hooks-oss'; // variable so bundlers and vitest do not resolve the optional package eagerly
     const mod = (await import(/* @vite-ignore */ pkg)) as { layaProvider: () => Promise<Provider> };
     return mod.layaProvider();
   }

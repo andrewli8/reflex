@@ -81,7 +81,7 @@ tr.m td{background:linear-gradient(90deg,transparent,#f3f6ff 20%,#f3f6ff 80%,tra
     <div class="lever j"><b><i>Jev</i> routes each step</b>Before every step, one question: routine or reasoning? Confident routine goes to the small model. Anything else stays large. 38 of 39 here. About $0.02 per thousand Jev calls.</div>
     <div class="lever j"><b><i>Jev</i> judges each write</b>Edits and destructive commands scored against the goal and constraints, 130 to 500 ms. Wrong work stops before it costs a retry loop: 0.99 on the constraint-breaking edit, 0.09 on the right one.</div>
     <div class="lever"><b>Results the agent stopped using fold away</b>On 20 real Claude Code sessions, 1,739 of 2,580 tool results were never referenced again, 47% of tool-output tokens re-read every step for nothing. Collapse is where the −63% on Haiku alone came from.</div>
-    <div class="cmd">npm i -g agent-reflex && reflex level ultra</div>
+    <div class="cmd">npm i -g reflex-hooks && reflex level ultra</div>
   </div>
 </div>
 <script src="series.js"></script>

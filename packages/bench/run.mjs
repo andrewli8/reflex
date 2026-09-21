@@ -5,7 +5,7 @@ import { mkdtempSync, writeFileSync, readFileSync, readdirSync, mkdirSync } from
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execSync } from 'node:child_process';
-import { Reflex, withReflex, reflexPrepareStep, jevProvider } from 'agent-reflex';
+import { Reflex, withReflex, reflexPrepareStep, jevProvider } from 'reflex-hooks';
 
 const MODEL = process.env.BENCH_MODEL ?? 'anthropic/claude-haiku-4-5';
 const ARMS = (process.env.BENCH_ARMS ?? 'baseline,reflex').split(',');

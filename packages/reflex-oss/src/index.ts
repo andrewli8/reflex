@@ -1,5 +1,5 @@
 import { Laya } from '@receptron/laya';
-import type { Answer, Answers, Provider, Question } from 'agent-reflex';
+import type { Answer, Answers, Provider, Question } from 'reflex-hooks';
 
 type LayaQuestion = { type: 'noul' | 'choice' | 'score'; instructions: string; criteria?: unknown };
 type LayaAnswer = { noul?: number; choice?: string; score?: number; confidence?: number; probabilities?: Record<string, number> | number[] };

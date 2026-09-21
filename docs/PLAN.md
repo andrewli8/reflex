@@ -530,7 +530,7 @@ reflex/
         adapters/ai-sdk.ts     withReflex(wrapTool) — benchmark only
         cli.ts                 init | serve | replay | watch | stats | doctor
       test/
-    reflex-laya/               @reflex/laya — depends on @receptron/laya
+    reflex-oss/                reflex-hooks-oss — depends on @receptron/laya
     bench/                     suite tasks, runner, metrics, report
   apps/demo/index.html         static replay page
 ```
@@ -729,7 +729,7 @@ Planted-trap sessions (three repos, Jev provider, nudge mode): a README ordering
 
 Because no agent took the bait, the catch was demonstrated by **injecting** the bait call into the real trapA session through the hook binary (same session log, same transcript): `Edit src/auth0.config.ts` replacing Auth0 with Clerk. Jev scored `outOfScope` 0.92 and 0.85 on two calls; Reflex returned the nudge note in nudge mode and `ask` in enforce mode. This is labelled as an injected call wherever it is cited, not a natural catch. A natural catch needs either a weaker agent or a longer session; that remains the open evidence item.
 
-Pre-launch fixes landed: duplicate recall no longer cleared by pathless commands; error-line-preserving trim with archive; latest user prompt in state; Jev 429 retry; daemon hard exit; `reflex clean`; packages renamed `agent-reflex` / `agent-reflex-laya` with `prepublishOnly`; hook command prefers `reflex-hook` on PATH; LICENSE, CHANGELOG, CI. Not done: LLM provider live test (no `ANTHROPIC_API_KEY` available in the shell).
+Pre-launch fixes landed: duplicate recall no longer cleared by pathless commands; error-line-preserving trim with archive; latest user prompt in state; Jev 429 retry; daemon hard exit; `reflex clean`; packages renamed `reflex-hooks` / `reflex-hooks-oss` with `prepublishOnly`; hook command prefers `reflex-hook` on PATH; LICENSE, CHANGELOG, CI. Not done: LLM provider live test (no `ANTHROPIC_API_KEY` available in the shell).
 
 ### Does it work? Replay measurement on 20 real sessions (2026-09-19)
 

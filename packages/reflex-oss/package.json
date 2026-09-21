@@ -1,5 +1,5 @@
 {
-  "name": "agent-reflex-laya",
+  "name": "reflex-hooks-oss",
   "version": "0.1.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -14,11 +14,11 @@
   },
   "dependencies": {
     "@receptron/laya": "^0.1.1",
-    "agent-reflex": "^0.1.0"
+    "reflex-hooks": "^0.1.0"
   },
   "engines": {
     "node": ">=22"
   },
   "license": "MIT",
-  "description": "Laya local decision model provider for agent-reflex"
+  "description": "Laya local decision model provider for reflex-hooks"
 }

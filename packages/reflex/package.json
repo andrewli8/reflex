@@ -1,5 +1,5 @@
 {
-  "name": "agent-reflex",
+  "name": "reflex-hooks",
   "version": "0.1.0",
   "type": "module",
   "main": "./dist/index.js",
