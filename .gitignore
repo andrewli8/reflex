@@ -5,3 +5,4 @@ packages/bench/results/
 .claude/settings.local.json
 .codex/hooks.json
 packages/reflex/README.md
+.claude/settings.json
