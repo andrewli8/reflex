@@ -12,7 +12,7 @@ cd your-project
 reflex init            # Claude Code; add --codex for Codex, --all for both
 ```
 
-`init` asks for a Jev API key (get one at https://typesafe.ai, early access), installs the hooks, then replays your last 20 sessions and prints what it would have caught. Start a new Claude Code session in that project and ask it to read the same file twice: the second read comes back as `[reflex] identical call already made`. `reflex doctor` shows the level, provider and whether a key is present; `reflex report` shows the last 30 days.
+`init` asks for a [Jev](https://typesafe.ai/) API key (TypeSafe, early access), installs the hooks, then replays your last 20 sessions and prints what it would have caught. Start a new Claude Code session in that project and ask it to read the same file twice: the second read comes back as `[reflex] identical call already made`. `reflex doctor` shows the level, provider and whether a key is present; `reflex report` shows the last 30 days.
 
 ## What Jev decides
 
@@ -103,10 +103,23 @@ Jev is the default. The others exist for comparison and for people who cannot us
 
 | provider | what | needs |
 |---|---|---|
-| `jev` (default) | TypeSafe's hosted decision model, 130 to 500 ms, about $0.02 per 1,000 calls | `reflex key jev <key>` |
+| `jev` (default) | [Jev](https://typesafe.ai/), TypeSafe's hosted decision model, 130 to 500 ms, about $0.02 per 1,000 calls | `reflex key jev <key>` |
+| `laya` | [Laya](https://huggingface.co/convaiinnovations/laya), open source (Apache 2.0), runs on your machine, about 290 ms per question on a laptop CPU | `npm i -g agent-reflex-laya`, 1.7 GB download on first use, 2 GB RAM |
 | `none` | candidates only, no judgment | nothing |
-| `laya` | open-source local model, 290 ms per question on a laptop | 1.7 GB download, runs in a small daemon |
-| `llm` | Claude Haiku answering the same questions | `ANTHROPIC_API_KEY` |
+| `llm` | Claude Haiku answering the same questions, for comparison | `ANTHROPIC_API_KEY` |
+
+### Laya, the open-source local option
+
+Laya is a 421M-parameter decision model with the same three primitives as Jev, released by convaiinnovations under Apache 2.0. Nothing leaves your machine.
+
+```bash
+npm i -g agent-reflex-laya
+reflex level ask
+# in reflex.config.json (or ~/.reflex/config.json):
+{ "level": "ask", "provider": "laya" }
+```
+
+The first hook call downloads the weights and starts a small daemon (`reflex serve --provider laya`, Unix socket under `~/.reflex`, exits after 30 idle minutes); until it is ready, calls fall through as limited. Honest limits, measured: Laya sees a 512-token state, so Reflex sends it one question per call, and on our probes only the redundancy question separated (0.71 for a repeated read vs 0.33 for a new one); the scope and destructive questions did not, so on Laya those decisions stay deterministic. On a laptop CPU it is slower than Jev and heavier on the fan. Good for air-gapped or privacy-first setups; Jev for judgment quality.
 
 What Jev is not asked outside `ultra`: whether a read will turn out useful. We measured that at coin-flip quality on 420 labelled reads and say so.
 
