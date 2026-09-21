@@ -4,3 +4,4 @@ packages/bench/results/
 .reflex/
 .claude/settings.local.json
 .codex/hooks.json
+packages/reflex/README.md

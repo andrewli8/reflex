@@ -16,7 +16,7 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "build": "tsc -p tsconfig.build.json",
-    "prepublishOnly": "npm run build && npm test"
+    "prepublishOnly": "cp ../../README.md README.md && npm run build && npm test"
   },
   "engines": {
     "node": ">=22"
