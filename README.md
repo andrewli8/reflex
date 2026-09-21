@@ -4,6 +4,16 @@ Judgment for coding agents, in 200 ms. Reflex asks Jev, a small typed decision m
 
 Works with Claude Code, Codex and the Vercel AI SDK.
 
+## Quick start
+
+```bash
+npm i -g agent-reflex
+cd your-project
+reflex init            # Claude Code; add --codex for Codex, --all for both
+```
+
+`init` asks for a Jev API key (get one at https://typesafe.ai, early access), installs the hooks, then replays your last 20 sessions and prints what it would have caught. Start a new Claude Code session in that project and ask it to read the same file twice: the second read comes back as `[reflex] identical call already made`. `reflex doctor` shows the level, provider and whether a key is present; `reflex report` shows the last 30 days.
+
 ## What Jev decides
 
 Your permission rules match command strings. They cannot know that a force push is fine on "squash and push my branch" and wrong on "fix the typo, do not rewrite history", or that editing `auth0.config.ts` violates "do not change authentication providers". Reflex hands Jev the task, the constraints, the last few actions and the proposed call, and acts on the answer.
@@ -43,33 +53,18 @@ Reflex is a hook that runs before and after every tool call. Cheap checks find c
 
 Also, without a model: your constraints are restated every turn so they never scroll out of attention, the agent gets a ledger of what it already read, edited and verified after each compaction, repeated reads and polling loops are pointed out, and oversized output is trimmed with error lines kept. Useful, but not the reason to install.
 
-## Install
+## Install, in detail
 
 ```bash
 npm i -g agent-reflex
 cd your-project
+reflex init              # Claude Code:  .claude/settings.json
+reflex init --codex      # Codex:        .codex/hooks.json
+reflex init --all        # both
+reflex init --all --global   # user-wide: ~/.claude/settings.json and ~/.codex/hooks.json
 ```
 
-Claude Code:
-
-```bash
-reflex init
-```
-
-Codex:
-
-```bash
-reflex init --codex
-```
-
-Both, or user-wide:
-
-```bash
-reflex init --all
-reflex init --all --global
-```
-
-`init` asks for your Jev key (TypeSafe, typesafe.ai), then replays your last 20 sessions and prints what it would have caught. Without a key Reflex runs limited: candidates are found but not judged, and `doctor` says so. Codex asks you to approve the new hook the first time you open it in that project.
+Hooks are read when a session starts, so restart Claude Code or open a new session after `init`. Codex asks you to approve the new hook the first time you open it in that project. Without a Jev key Reflex runs limited: candidates are found but not judged, and `doctor` says `LIMITED`. Add a key later with `reflex key jev <key>`. Requires Node 22 or newer.
 
 Prefer to let the agent do it? Paste `INSTALL-PROMPT.md` into any coding agent, or drop `skills/reflex-install` into `.claude/skills`.
 
@@ -100,7 +95,7 @@ One knob. `reflex level <name>` writes it to `reflex.config.json` (`--global` fo
 
 Use `auto` or `ultra` for CI and overnight runs, where a prompt would hang forever. Any key in the config file still overrides its level's preset; `mode: "nudge"` is still available for note-only behaviour.
 
-A denied call can be re-issued with `reflex:force` in its description. Reflex stops nudging a pattern once you override it. At most two interventions per five steps.
+A denied duplicate runs if the agent simply calls it again, and Reflex stops flagging that call for the rest of the session. `reflex:force` in any argument does the same. At most two interventions per five steps.
 
 ## Decision models
 
@@ -139,7 +134,7 @@ With `level: ultra` and `routing: { small, large }` passed to `reflexPrepareStep
 
 **Does it slow the agent down?** The hook starts in about 30 ms. A decision model adds 130 to 500 ms on the calls that reach it, which you can limit with `modelClasses`.
 
-**What does it store?** Session logs and archived tool output under `~/.reflex`, owner-only permissions, with API keys, bearer tokens and `KEY=value` secrets redacted before they are written. Redaction is pattern based: it catches labelled values and common token formats, and it will miss an unlabelled or unusually formatted secret, so treat it as a safety net rather than a guarantee. Nothing leaves your machine unless you configure a hosted model.
+**What does it store?** Session logs and archived tool output under `~/.reflex`, owner-only permissions, with API keys, bearer tokens and `KEY=value` secrets redacted before they are written. Redaction is pattern based: it catches labelled values and common token formats, and it will miss an unlabelled or unusually formatted secret, so treat it as a safety net rather than a guarantee. With the default Jev provider, the compact state described below goes to TypeSafe for each judged call; nothing else leaves your machine, and with `provider: none` nothing does.
 
 **What does a hosted model see?** With `jev` or `llm` configured, each judged call sends a text state under a few hundred tokens: your task's first prompt and latest prompt, the extracted constraints, the last eight tool calls as one-line summaries with 80-character result digests, and the proposed call. The same redaction runs on that text first. Full tool outputs and file contents are never sent.
 

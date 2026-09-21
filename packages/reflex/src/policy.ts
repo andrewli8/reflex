@@ -59,6 +59,6 @@ export function capMode(p: Decision, mode: Mode, patternAsk: boolean, cfg: Refle
     return { action: 'allow', applied: 'nudge', note: NOTE(reason) };
   }
   if (mode === 'nudge') return { action: 'allow', applied: 'nudge', note: NOTE(reason) };
-  const tail = p.kind === 'skip' ? " Reuse the earlier result, or re-run with 'reflex:force' in the description." : ' Restate the plan against the goal and constraints in one paragraph before continuing.';
+  const tail = p.kind === 'skip' ? ' Reuse the earlier result. If it may have changed, call again and it will run.' : ' Restate the plan against the goal and constraints in one paragraph before continuing.';
   return { action: 'deny', applied: p.kind, reason: `[reflex] ${reason}.${tail}` };
 }

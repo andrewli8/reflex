@@ -385,3 +385,18 @@ describe('read-class output is protected from trim', () => {
     expect((await r.post(c2, { output: 'src/b.ts:12: x here\n'.repeat(1100) })).kind).toBe('trim');
   });
 });
+
+describe('retry after deny is the override', () => {
+  it('runs the same read on the immediate retry and learns it', async () => {
+    const { r, events } = mk({ mode: 'enforce' });
+    const c1 = call('Read', { file_path: 'a.ts' }); await r.pre(c1); await r.post(c1, { output: 'x' });
+    const d1 = await r.pre(call('Read', { file_path: 'a.ts' }));
+    expect(d1.host.action).toBe('deny');
+    expect(d1.host.reason).toContain('call again and it will run');
+    const d2 = await r.pre(call('Read', { file_path: 'a.ts' }));
+    expect(d2.host.action).toBe('allow');
+    expect(events.at(-1)?.forced).toBe(true);
+    const d3 = await r.pre(call('Read', { file_path: 'a.ts' }));
+    expect(d3.event.suppressed).toBe('learned');
+  });
+});

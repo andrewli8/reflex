@@ -119,7 +119,10 @@ export class Reflex {
     const step = this.actions.length + 1;
     const proposed = makeAction(call.tool, call.args, this.cwd, step);
     const cls = classify(call.tool, call.args, this.cwd);
-    const forced = hasOverride(call);
+    // Override: `reflex:force` in any argument, or the same call repeated right after Reflex denied it (tools like Read have no free-text argument).
+    const lastPre = [...this.events].reverse().find((e) => e.phase === 'pre');
+    const retryAfterDeny = Boolean(lastPre && lastPre.action?.signature === proposed.signature && (lastPre.applied === 'skip' || lastPre.applied === 'replan'));
+    const forced = hasOverride(call) || retryAfterDeny;
     const refs = this.markReferences(`${JSON.stringify(call.args)}\n${this.plan}`);
     const base = { ts: this.now(), step, toolUseId: call.toolUseId, tool: call.tool, class: cls.class, summary: proposed.summary, phase: 'pre' as const };
     const finish = (policy: Decision, extra: Partial<ReflexEvent>, capped?: HostAction): PreDecision => {
