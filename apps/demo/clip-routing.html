@@ -14,12 +14,18 @@ html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:var(--b
 .bar i{width:13px;height:13px;border-radius:50%;background:var(--line)}
 .bar span{margin-left:8px}
 .bar b{margin-left:auto;font-weight:600;color:var(--jev)}
+.q{padding:16px 26px;border-bottom:1px solid var(--line);background:#f7f9ff;font-size:20px;line-height:1.5}
+.q b{color:var(--jev);font-weight:600}
+.q span{color:var(--dim);font-size:17px;display:block}
+.q span i{font-style:normal;color:var(--ink)}
+.cav{padding:12px 26px;border-top:1px solid var(--line);color:var(--dim);font-size:16px;line-height:1.4}
 .out{flex:1;padding:18px 26px;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;overflow:hidden}
 .s{display:grid;grid-template-columns:70px 1fr auto auto;gap:18px;align-items:center;padding:8px 12px;border-radius:8px;opacity:0;transform:translateY(6px)}
 .s.show{opacity:1;transform:none;transition:opacity .15s,transform .15s}
 .s .n{color:var(--dim);font-size:18px}
 .s .c b{font-weight:600}
 .s .j{color:var(--jev);font-size:18px}
+.s .j.d{color:var(--dim)}
 .s .m{border:2px solid currentColor;border-radius:6px;padding:1px 10px;font-size:17px;font-weight:600;letter-spacing:.08em}
 .s .m.h{color:var(--ok)}.s .m.l{color:var(--ink)}
 .s.big{background:#fff5f1}
@@ -27,7 +33,7 @@ html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:var(--b
 .card{background:var(--term);border:1px solid var(--line);border-radius:18px;padding:28px 32px;flex:1;display:flex;flex-direction:column;justify-content:space-between}
 .card small{display:block;color:var(--dim);font-size:17px;letter-spacing:.12em;text-transform:uppercase}
 .card .tk{color:var(--dim);font-size:19px;margin-top:6px;font-variant-numeric:tabular-nums}
-.card b{font:400 120px/1 "Instrument Serif",serif;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.card b{font:400 108px/1 "Instrument Serif",serif;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
 .card.a b{color:var(--ink)}.card.b b{color:var(--jev)}
 .card .bar2{height:14px;background:#efeee9;border-radius:7px;overflow:hidden;margin-top:14px}
 .card .bar2 i{display:block;height:100%;width:0;background:var(--ink)}
@@ -37,10 +43,10 @@ html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:var(--b
 </head>
 <body>
 <div class="wrap">
-  <div class="term"><div class="bar"><i></i><i></i><i></i><span>ai sdk · benchmark task · 39 steps</span><b>reflex level ultra · jev routing</b></div><div class="out" id="out"></div></div>
+  <div class="term"><div class="bar"><i></i><i></i><i></i><span>ai sdk · benchmark task · 39 steps</span><b>reflex level ultra · jev routing</b></div><div class="q"><b>Before every step, Reflex asks Jev:</b> which model does the next step need?<span><i>small</i> routine: read a file, list files, run tests, a one-line edit &nbsp;·&nbsp; <i>large</i> reasoning: decide what to change, debug, restructure across files &nbsp;·&nbsp; routes down only at confidence ≥ 0.60</span></div><div class="out" id="out"></div><div class="cav" id="cav">Read-then-fix benchmark: 38 routine steps, 0 reasoning steps. Jev routed down every time and never needed to route back up here.</div></div>
   <div class="side">
-    <div class="card a"><div><small>Sonnet 5, every step</small><b id="ca">$0.00</b><div class="tk" id="ta">0 input tokens</div></div><div><div class="bar2"><i id="ba"></i></div><div class="lbl">model chosen for every step: Sonnet 5</div></div></div>
-    <div class="card b"><div><small>Reflex ultra: Jev picks the model per step</small><b id="cb">$0.00</b><div class="tk" id="tb">0 input tokens</div></div><div><div class="bar2"><i id="bb"></i></div><div class="lbl" id="lb">Haiku 4.5 on 0 steps · Sonnet 5 on 0</div></div></div>
+    <div class="card a"><div><small>Same 39 steps · Sonnet 5 on every step</small><b id="ca">$0.00</b><div class="tk" id="ta">0 input tokens</div></div><div><div class="bar2"><i id="ba"></i></div><div class="lbl">model chosen for every step: Sonnet 5</div></div></div>
+    <div class="card b"><div><small>Same 39 steps · Jev picks the model per step</small><b id="cb">$0.00</b><div class="tk" id="tb">0 input tokens</div></div><div><div class="bar2"><i id="bb"></i></div><div class="lbl" id="lb">Haiku 4.5 on 0 steps · Sonnet 5 on 0</div></div></div>
   </div>
 </div>
 <script src="steps.js"></script>
@@ -56,8 +62,8 @@ let ca = 0, cb = 0, ta = 0, tb = 0, hs = 0, ls = 0;
   for (let i = 0; i < ROUTE.length; i++) {
     const r = ROUTE[i], b = BASE[Math.min(i, BASE.length - 1)];
     const el = document.createElement('div'); el.className = 's' + (r.small ? '' : ' big');
-    el.innerHTML = `<span class="n">${i + 1}</span><span class="c"><b>${r.tool}</b> ${r.arg}</span><span class="j">jev · ${r.small ? 'routine' : 'reasoning'}</span><span class="m ${r.small ? 'h' : 'l'}">${r.small ? 'haiku 4.5' : 'sonnet 5'}</span>`;
-    out.appendChild(el); requestAnimationFrame(() => el.classList.add('show')); while (out.children.length > 15) out.removeChild(out.firstChild);
+    el.innerHTML = `<span class="n">${i + 1}</span><span class="c"><b>${r.tool}</b> ${r.arg}</span><span class="j${i ? '' : ' d'}">${i ? 'jev → small' : 'run starts on large'}</span><span class="m ${r.small ? 'h' : 'l'}">${r.small ? 'haiku 4.5' : 'sonnet 5'}</span>`;
+    out.appendChild(el); requestAnimationFrame(() => el.classList.add('show')); while (out.children.length > 12) out.removeChild(out.firstChild);
     if (i < BASE.length) { ca += price(b, false); ta += b.in; }
     cb += price(r, r.small); tb += r.in; r.small ? hs++ : ls++;
     $('ca').textContent = '$' + ca.toFixed(2); $('cb').textContent = '$' + cb.toFixed(2);
